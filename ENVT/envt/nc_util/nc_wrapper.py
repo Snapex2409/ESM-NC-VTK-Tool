@@ -3,12 +3,12 @@ from enum import Enum
 import matplotlib.pyplot as plt
 
 class NCVars(Enum):
-    BGGD = "bggd",
-    ICOH = "icoh",
-    ICOS = "icos",
-    NOGT = "nogt",
-    SSE7 = "sse7",
-    SSEA = "ssea",
+    BGGD = "bggd"
+    ICOH = "icoh"
+    ICOS = "icos"
+    NOGT = "nogt"
+    SSE7 = "sse7"
+    SSEA = "ssea"
     TORC = "torc"
 
     def __str__(self):
@@ -16,18 +16,18 @@ class NCVars(Enum):
 
     @staticmethod
     def get_entry(name):
-        inv_map = {v:n for n,v in NCVars.__dict__.items()}
+        inv_map = {v.value:v for n,v in NCVars.__members__.items()}
         return inv_map[name]
 
 
 class NCFile:
     def __init__(self, path):
         self.path = path
-        with nc.Dataset(path, 'r') as ds:
-            self.dimensions = ds.dimensions
-            self.variables = ds.variables
-            self.attributes = ds.ncattrs()
-            self.dataset = ds
+        ds = nc.Dataset(path, 'r')
+        self.dataset = ds
+        self.dimensions = ds.dimensions
+        self.variables = ds.variables
+        self.attributes = ds.ncattrs()
 
     def var_lon_data(self, var:NCVars):
         name = f"{var.value}.lon"

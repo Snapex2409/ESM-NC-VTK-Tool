@@ -26,7 +26,7 @@ def main():
     vtk_parser.add_argument("file", type=str, help="Path to the NetCDF file. Can be VTK file if --conv is used.")
     vtk_parser.add_argument("--var", type=str, required=True, help="Variable name prefix (e.g., 'torc').")
     vtk_parser.add_argument("-c", "--corner", action="store_true", help="Use corner coordinates (clo/cla).")
-    vtk_parser.add_argument("-m", "--mask", type=str, required=True, help="Mask file path.", default=None)
+    vtk_parser.add_argument("-m", "--mask", type=str, help="Mask file path.", default=None)
     vtk_parser.add_argument("-o", "--output", type=str, help="Output file path.", default=None)
     vtk_parser.add_argument("-f", "--filter", action="store_true", help="Filter out land cells")
 
