@@ -52,6 +52,8 @@ def main():
     # VTK filtering mode
     vtkf_parser = subparsers.add_parser("vtkf", help="Filter VTK unstructured grid.")
     vtkf_parser.add_argument("file", type=str, help="Path to the VTK file.")
+    vtkf_parser.add_argument("nc_file", type=str, help="NetCDF file to process.")
+    vtkf_parser.add_argument("var", type=str, help="Variable name prefix (e.g., 'torc').")
     vtkf_parser.add_argument("-o", "--output", type=str, help="Output file path.", default=None)
     vtkf_parser.add_argument("-w", "--water", action="store_true", help="Flag if mask value denotes water or not.")
 
@@ -97,7 +99,7 @@ def main():
     elif args.mode == "vtkf":
         out_path = "./output.vtk"
         if args.output is not None: out_path = args.output
-        fil = Filter(args.file)
+        fil = Filter(args.file, ncw.NCVars.get_entry(args.var), args.nc_file)
         fil.apply(out_path, 0.001, args.water)
 
 

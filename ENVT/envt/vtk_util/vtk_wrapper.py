@@ -3,30 +3,17 @@ import vtkmodules.util.numpy_support as vtk_np
 
 VTK_QUAD = vtk.VTK_QUAD
 VTK_POLYGON = vtk.VTK_POLYGON
+VTK_TRIANGLE = vtk.VTK_TRIANGLE
 
-def vtkUnstructuredGridReader():
-    return vtk.vtkUnstructuredGridReader()
-
-def vtkUnstructuredGridWriter():
-    return vtk.vtkUnstructuredGridWriter()
-
-def vtkPoints():
-    return vtk.vtkPoints()
-
-def vtkUnstructuredGrid():
-    return vtk.vtkUnstructuredGrid()
-
-def vtkCellArray():
-    return vtk.vtkCellArray()
-
-def vtkFloatArray():
-    return vtk.vtkFloatArray()
-
-def vtkQuad():
-    return vtk.vtkQuad()
-
-def vtkPolygon():
-    return vtk.vtkPolygon()
+def vtkUnstructuredGridReader(): return vtk.vtkUnstructuredGridReader()
+def vtkUnstructuredGridWriter(): return vtk.vtkUnstructuredGridWriter()
+def vtkPoints(): return vtk.vtkPoints()
+def vtkUnstructuredGrid(): return vtk.vtkUnstructuredGrid()
+def vtkCellArray(): return vtk.vtkCellArray()
+def vtkFloatArray(): return vtk.vtkFloatArray()
+def vtkQuad(): return vtk.vtkQuad()
+def vtkPolygon(): return vtk.vtkPolygon()
+def vtkTriangle():return vtk.vtkTriangle()
 
 class VTKInputFile:
     def __init__(self, filename):

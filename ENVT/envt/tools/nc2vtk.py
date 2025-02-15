@@ -1,6 +1,7 @@
 import envt.nc_util.nc_wrapper as ncw
 import envt.vtk_util.vtk_wrapper as vtkw
 from envt.tools.convert import Converter as cv
+from envt.tools.triangulation import triangulate_polygon as triangulate
 import numpy as np
 import vtkmodules.util.numpy_support as vtk_np
 
@@ -36,16 +37,14 @@ class NC2VTK:
 
         return unstructured_grid
 
-    def _nc2vtk_corner(self, var:ncw.NCVars, use_filter:bool):
-        clo = self.nc_input.var_clo_data(var)
-        cla = self.nc_input.var_cla_data(var)
-        msk = self.msk_input.var_msk_data(var).flatten() if self.msk_input is not None else None
-
+    @staticmethod
+    def process_corner_data(clo, cla, msk=None, use_filter=False):
         dims = clo.shape[0]
         clo = np.array([clo[i, :, :].flatten() for i in range(dims)])
         cla = np.array([cla[i, :, :].flatten() for i in range(dims)])
         clo_cla_points = np.array([np.column_stack((clo[i, :], cla[i, :])) for i in range(dims)])
         if use_filter and msk is not None: clo_cla_points = clo_cla_points[:, msk == 0, :]
+        clo_cla_points[np.isclose(clo_cla_points, 0)] = 0.0
         unique_points = np.unique(clo_cla_points.reshape((-1, 2)), axis=0)
 
         lon = unique_points[:, 0]
@@ -55,6 +54,13 @@ class NC2VTK:
 
         corner_coords = clo_cla_points
         corner_indices = np.array([[coord_2_unique_idx[tuple(point)] for point in corner_coords[i, :, :]] for i in range(dims)])
+        return lon, lat, num_entries, corner_indices
+
+    def _nc2vtk_corner(self, var:ncw.NCVars, use_filter:bool):
+        clo = self.nc_input.var_clo_data(var)
+        cla = self.nc_input.var_cla_data(var)
+        msk = self.msk_input.var_msk_data(var).flatten() if self.msk_input is not None else None
+        lon, lat, num_entries, corner_indices = NC2VTK.process_corner_data(clo, cla, msk, use_filter)
 
         cart_points = cv.convert_data_arrays(cv.Mode2DTO3D(), lon, lat, np.zeros((len(lon),)))
         cart_points_data_array = vtk_np.numpy_to_vtk(cart_points, deep=True)
@@ -64,30 +70,24 @@ class NC2VTK:
 
         vtk_cells = vtkw.vtkCellArray()
         for i in range(num_entries):
-            if dims == 4:
-                idx0, idx1, idx2, idx3 = corner_indices[0, i], corner_indices[1, i], corner_indices[2, i], \
-                corner_indices[3, i]
-                quad = vtkw.vtkQuad()
-                quad.GetPointIds().SetId(0, idx0)
-                quad.GetPointIds().SetId(1, idx1)
-                quad.GetPointIds().SetId(2, idx2)
-                quad.GetPointIds().SetId(3, idx3)
+            # triangulate points
+            # first filter out duplicates
+            indices = corner_indices[:, i]
+            indices = np.unique(indices)
 
-                vtk_cells.InsertNextCell(quad)
-            else:
-                # triangulate points
-                # first filter out duplicates
-                indices = corner_indices[:, i]
-                indices = np.unique(indices)
-                poly = vtkw.vtkPolygon()
-                poly.GetPointIds().SetNumberOfIds(len(indices))
-                for pos, idx in enumerate(indices):
-                    poly.GetPointIds().SetId(pos, idx)
-                vtk_cells.InsertNextCell(poly)
+            points = cart_points[indices]
+            _, tri_indices = triangulate(points, indices)
+
+            for idx_tri in range(tri_indices.shape[0]):
+                tri = vtkw.vtkTriangle()
+                tri.GetPointIds().SetId(0, tri_indices[idx_tri][0])
+                tri.GetPointIds().SetId(1, tri_indices[idx_tri][1])
+                tri.GetPointIds().SetId(2, tri_indices[idx_tri][2])
+                vtk_cells.InsertNextCell(tri)
 
         unstructured_grid = vtkw.vtkUnstructuredGrid()
         unstructured_grid.SetPoints(vtk_points)
-        unstructured_grid.SetCells(vtkw.VTK_QUAD if dims == 4 else vtkw.VTK_POLYGON, vtk_cells)
+        unstructured_grid.SetCells(vtkw.VTK_TRIANGLE, vtk_cells)
 
         if msk is not None:
             if use_filter:

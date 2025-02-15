@@ -14,11 +14,17 @@ class Converter(vtkw.VTKInputFile):
 
         def dst_crs(self) -> Proj: return self.dst_proj
 
+        def check_data(self, d0, d1, d2): pass
+
     class Mode2DTO3D(Mode):
         def __init__(self):
             super().__init__()
             self.src_proj = Proj(proj="latlong", datum="WGS84")
             self.dst_proj = Proj(proj="geocent", datum="WGS84")
+
+        def check_data(self, lon, lat, _):
+            lon[lon > 180] -= 360
+            lon[lon < -180] += 360
 
     class Mode3DTO2D(Mode):
         def __init__(self):
@@ -38,6 +44,7 @@ class Converter(vtkw.VTKInputFile):
 
     @staticmethod
     def convert_data_arrays(mode:Union[Mode2DTO3D, Mode3DTO2D, ModeManual], in_arr_d0, in_arr_d1, in_arr_d2):
+        mode.check_data(in_arr_d0, in_arr_d1, in_arr_d2)
         out_arr_d0, out_arr_d1, out_arr_d2 = transform(mode.src_crs(), mode.dst_crs(), in_arr_d0, in_arr_d1, in_arr_d2)
         np_out_array = np.column_stack((out_arr_d0, out_arr_d1, out_arr_d2))
         return np_out_array
