@@ -43,7 +43,7 @@ def main():
     vtke_parser = subparsers.add_parser("vtke", help="Evaluate VTK unstructured grid.")
     vtke_parser.add_argument("file", type=str, help="Path to the VTK file.")
     vtke_parser.add_argument("-f", "--function", required=True, type=str, help="Function to evaluate.",
-                             default="sinusoid", choices=["sinusoid", "harmonic", "vortex", "golfstream"])
+                             default="sinusoid", choices=["sinusoid", "harmonic", "vortex", "gulfstream"])
     vtke_parser.add_argument("-o", "--output", type=str, help="Output file path.", default=None)
     vtke_parser.add_argument("-d", "--diff", action="store_true",
                              help="Computes difference of VTK data to analytical solution")
@@ -56,6 +56,7 @@ def main():
     vtkf_parser.add_argument("var", type=str, help="Variable name prefix (e.g., 'torc').")
     vtkf_parser.add_argument("-o", "--output", type=str, help="Output file path.", default=None)
     vtkf_parser.add_argument("-w", "--water", action="store_true", help="Flag if mask value denotes water or not.")
+    vtkf_parser.add_argument("-m", "--mask", type=str, help="Use original mask data for SEA meshes. Mask file path.", default=None)
 
     args = parser.parse_args()
 
@@ -100,7 +101,7 @@ def main():
         out_path = "./output.vtk"
         if args.output is not None: out_path = args.output
         fil = Filter(args.file, ncw.NCVars.get_entry(args.var), args.nc_file)
-        fil.apply(out_path, 0.001, args.water)
+        fil.apply(out_path, 0.001, args.water, args.mask)
 
 
 if __name__ == '__main__':

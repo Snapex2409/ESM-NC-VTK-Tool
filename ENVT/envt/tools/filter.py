@@ -10,9 +10,9 @@ class Filter:
     def __init__(self, input_file, var:ncw.NCVars, nc_file_path):
         self.vtk_file = vtkw.VTKInputFile(input_file)
         self.nc_input = ncw.NCFile(nc_file_path)
-        clo = self.nc_input.var_clo_data(var)
-        cla = self.nc_input.var_cla_data(var)
-        msk_lon, msk_lat, msk_entries, msk_corner_indices = NC2VTK.process_corner_data(clo, cla)
+        self.clo = self.nc_input.var_clo_data(var)
+        self.cla = self.nc_input.var_cla_data(var)
+        msk_lon, msk_lat, msk_entries, msk_corner_indices = NC2VTK.process_corner_data(self.clo, self.cla)
         self.msk_lon = msk_lon
         self.msk_lat = msk_lat
         self.msk_num_entries = msk_entries
@@ -20,19 +20,24 @@ class Filter:
 
         self.lon = self.nc_input.var_lon_data(var).flatten()
         self.lat = self.nc_input.var_lat_data(var).flatten()
+        self.var = var
 
-    def apply(self, output_file, threshold=0.001, denotes_water=False):
+    def apply(self, output_file, threshold=0.001, denotes_water=False, orig_mask=None):
         # load mask data
         np_mask_data = None
-        for i in range(self.vtk_file.input_point_data.GetNumberOfArrays()):
-            array = self.vtk_file.input_point_data.GetArray(i)
-            if array.GetName() == "mask":
-                np_mask_data = vtk_np.vtk_to_numpy(array)
-                break
-        if np_mask_data is None:
-            print("WARNING: No mask data available")
-            return
-        np_cell_mask = np.average(np_mask_data[self.msk_corner_indices], axis=0)
+        if orig_mask is None:
+            for i in range(self.vtk_file.input_point_data.GetNumberOfArrays()):
+                array = self.vtk_file.input_point_data.GetArray(i)
+                if array.GetName() == "mask":
+                    np_mask_data = vtk_np.vtk_to_numpy(array)
+                    break
+            if np_mask_data is None:
+                print("WARNING: No mask data available")
+                return
+            np_cell_mask = np.average(np_mask_data[self.msk_corner_indices], axis=0)
+        else:
+            msk_file = ncw.NCFile(orig_mask)
+            np_cell_mask = msk_file.var_msk_data(self.var).flatten()
 
         # find valid cells
         valid_points = None
@@ -55,6 +60,7 @@ class Filter:
             if not valid_points[i]: continue
             indices = self.msk_corner_indices[:, i]
             indices = np.unique(indices)
+            if len(indices) < 3: continue
 
             points = np_msk_points[indices]
             tri_points, tri_indices = triangulate(points, indices)
@@ -67,7 +73,7 @@ class Filter:
                 v = p1 - p0
                 w = p2 - p0
                 cross_product = np.cross(v, w)
-                np_cell_sizes[i] += 0.5 * np.linalg.norm(cross_product)
+                np_cell_sizes[i] += np.abs(0.5 * np.linalg.norm(cross_product))
         point_data_integral = vtk_np.numpy_to_vtk(np_cell_sizes[valid_points], deep=True)
         point_data_integral.SetName("area")
 

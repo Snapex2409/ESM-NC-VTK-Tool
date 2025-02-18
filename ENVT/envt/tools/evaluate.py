@@ -11,8 +11,9 @@ class Evaluator(vtkw.VTKInputFile):
         self.outfile = outfile
 
     @staticmethod
-    def integrate_2d(points, evals):
-        return 1
+    def integrate_2d(points, evals, areas):
+        integral = np.sum(evals * areas)
+        return integral
 
     def evaluate(self, fun_name):
         np_points = vtk_np.vtk_to_numpy(self.input_points.GetData())
@@ -29,18 +30,29 @@ class Evaluator(vtkw.VTKInputFile):
         ana_point_data_tgt = Evaluator.FUNCTIONS[fun_name](np_points)
 
         map_point_data = None
+        map_point_data_cell = None
         if self.input_point_data:
             for i in range(self.input_point_data.GetNumberOfArrays()):
                 array = self.input_point_data.GetArray(i)
                 if array.GetName() == "eval":
                     map_point_data = vtk_np.vtk_to_numpy(array)
-                    break
+                if array.GetName() == "area":
+                    map_point_data_cell = vtk_np.vtk_to_numpy(array)
 
-        if map_point_data is None:
-            print("No eval data in VTK file")
+        if map_point_data is None or map_point_data_cell is None:
+            print("No eval/area data in mapped VTK file")
             return
 
         source_mesh = vtkw.VTKInputFile(source_mesh_file)
+        source_point_data_cell = None
+        for i in range(source_mesh.input_point_data.GetNumberOfArrays()):
+            array = source_mesh.input_point_data.GetArray(i)
+            if array.GetName() == "area":
+                source_point_data_cell = vtk_np.vtk_to_numpy(array)
+                break
+        if source_point_data_cell is None:
+            print("No area data in source VTK file")
+
         np_points = vtk_np.vtk_to_numpy(source_mesh.input_points.GetData())
         ana_points_data_src = Evaluator.FUNCTIONS[fun_name](np_points)
         mesh_points_src = np_points
@@ -54,9 +66,9 @@ class Evaluator(vtkw.VTKInputFile):
         l_min = (np.min(ana_point_data_tgt) - np.min(map_point_data)) / np.max(np.abs(ana_point_data_tgt))
         l_max = (np.max(map_point_data) - np.max(ana_point_data_tgt)) / np.max(np.abs(ana_point_data_tgt))
 
-        int_map = Evaluator.integrate_2d(mesh_points_tgt, map_point_data)
-        int_ana_src = Evaluator.integrate_2d(mesh_points_src, ana_points_data_src)
-        int_ana_tgt = Evaluator.integrate_2d(mesh_points_tgt, ana_point_data_tgt)
+        int_map = Evaluator.integrate_2d(mesh_points_tgt, map_point_data, map_point_data_cell)
+        int_ana_src = Evaluator.integrate_2d(mesh_points_src, ana_points_data_src, source_point_data_cell)
+        int_ana_tgt = Evaluator.integrate_2d(mesh_points_tgt, ana_point_data_tgt, map_point_data_cell)
         glob_cons_src = np.abs(int_map - int_ana_src) / np.abs(int_ana_src)
         glob_cons_tgt = np.abs(int_map - int_ana_tgt) / np.abs(int_ana_tgt)
 

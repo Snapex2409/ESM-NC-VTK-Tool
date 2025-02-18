@@ -69,11 +69,14 @@ class NC2VTK:
         vtk_points.SetData(cart_points_data_array)
 
         vtk_cells = vtkw.vtkCellArray()
+        if msk is not None:
+            nfilter_msk = np.zeros((len(lon),))
         for i in range(num_entries):
             # triangulate points
             # first filter out duplicates
             indices = corner_indices[:, i]
             indices = np.unique(indices)
+            if len(indices) < 3: continue
 
             points = cart_points[indices]
             _, tri_indices = triangulate(points, indices)
@@ -85,6 +88,9 @@ class NC2VTK:
                 tri.GetPointIds().SetId(2, tri_indices[idx_tri][2])
                 vtk_cells.InsertNextCell(tri)
 
+            if msk is not None and msk[i] == 0:
+                nfilter_msk[indices] = 1.0
+
         unstructured_grid = vtkw.vtkUnstructuredGrid()
         unstructured_grid.SetPoints(vtk_points)
         unstructured_grid.SetCells(vtkw.VTK_TRIANGLE, vtk_cells)
@@ -95,11 +101,8 @@ class NC2VTK:
                 vtk_point_data.SetName("mask")  # Set the name of the point data
                 unstructured_grid.GetPointData().AddArray(vtk_point_data)
             else:
-                cell_data = vtkw.vtkFloatArray()
-                cell_data.SetName("mask")
-                cell_data.SetNumberOfValues(1)
-                mask_data_data_array = vtk_np.numpy_to_vtk(msk.astype(np.float32), deep=True)
-                cell_data.DeepCopy(mask_data_data_array)
-                unstructured_grid.GetCellData().SetScalars(cell_data)
+                vtk_point_data = vtk_np.numpy_to_vtk(nfilter_msk, deep=True)
+                vtk_point_data.SetName("mask")  # Set the name of the point data
+                unstructured_grid.GetPointData().AddArray(vtk_point_data)
 
         return unstructured_grid
