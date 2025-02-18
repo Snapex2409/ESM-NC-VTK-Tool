@@ -2,9 +2,10 @@ import envt.vtk_util.vtk_wrapper as vtkw
 import envt.nc_util.nc_wrapper as ncw
 from envt.tools.nc2vtk import NC2VTK
 from envt.tools.convert import Converter as cv
-from envt.tools.triangulation import triangulate_polygon as triangulate
+from envt.tools.triangulation import triangulate_polygon as triangulate, triangulate_convex_shape
 import numpy as np
 import vtkmodules.util.numpy_support as vtk_np
+from collections import defaultdict
 
 class Filter:
     def __init__(self, input_file, var:ncw.NCVars, nc_file_path):
@@ -21,6 +22,30 @@ class Filter:
         self.lon = self.nc_input.var_lon_data(var).flatten()
         self.lat = self.nc_input.var_lat_data(var).flatten()
         self.var = var
+
+    def compute_cell_connectivity(self, valid_cells):
+        corner_indices = self.msk_corner_indices[:,valid_cells]
+        N, M = corner_indices.shape  # N = corners per cell, M = number of cells
+
+        # Step 1: Create a point-to-cells mapping
+        point_to_cells = defaultdict(set)
+        for cell_idx in range(M):
+            for point_idx in corner_indices[:, cell_idx]:
+                point_to_cells[point_idx].add(cell_idx)
+
+        # Step 2: Compute connectivity by checking shared points
+        cell_connections = defaultdict(set)
+        for cell_idx in range(M):
+            # Get all other cells that share at least one point with the current cell
+            connected_cells = set()
+            for point_idx in corner_indices[:, cell_idx]:
+                connected_cells.update(point_to_cells[point_idx])
+
+            # Remove self from connections
+            #connected_cells.discard(cell_idx)
+            cell_connections[cell_idx] = connected_cells
+
+        return cell_connections
 
     def apply(self, output_file, threshold=0.001, denotes_water=False, orig_mask=None):
         # load mask data
@@ -77,9 +102,26 @@ class Filter:
         point_data_integral = vtk_np.numpy_to_vtk(np_cell_sizes[valid_points], deep=True)
         point_data_integral.SetName("area")
 
+        # compute new cells based on centers
+        cell_connections = self.compute_cell_connectivity(valid_points)
+        vtk_cells = vtkw.vtkCellArray()
+        for i in range(np_points.shape[0]):
+            cell_ids = np.array(list(cell_connections[i]))
+            points = np_points[cell_ids]
+            if len(points) < 3: continue
+            _, tri_indices = triangulate_convex_shape(points, cell_ids)
+
+            for idx_tri in range(tri_indices.shape[0]):
+                tri = vtkw.vtkTriangle()
+                tri.GetPointIds().SetId(0, tri_indices[idx_tri][0])
+                tri.GetPointIds().SetId(1, tri_indices[idx_tri][1])
+                tri.GetPointIds().SetId(2, tri_indices[idx_tri][2])
+                vtk_cells.InsertNextCell(tri)
+
         out_grid = vtkw.vtkUnstructuredGrid()
         out_points = vtkw.vtkPoints()
         out_points.SetData(vtk_np.numpy_to_vtk(np_points))
         out_grid.SetPoints(out_points)
+        out_grid.SetCells(vtkw.VTK_TRIANGLE, vtk_cells)
         out_grid.GetPointData().AddArray(point_data_integral)
         vtkw.VTKOutputFile(output_file, out_grid).write()

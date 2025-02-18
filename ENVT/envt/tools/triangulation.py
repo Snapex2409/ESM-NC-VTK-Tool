@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial import Delaunay
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 
 def compute_normal(points, e1, e2):
     """Compute the normal vector using the first three points."""
@@ -55,3 +56,44 @@ def triangulate_polygon(points, indices):
     #plt.show()
 
     return sorted_points[tri.simplices], sorted_indices[tri.simplices]
+
+def compute_orthonormal_basis(normal):
+    """Compute two perpendicular basis vectors given a normal vector."""
+    n1, n2, n3 = normal
+
+    # Compute the first basis vector (u')
+    if n1 != 0:
+        u_prime = np.array([-(n2 + n3) / n1, 1, 1])
+    elif n2 != 0:
+        u_prime = np.array([1, -(n1 + n3) / n2, 1])
+    else:  # n3 must be nonzero
+        u_prime = np.array([1, 1, -(n1 + n2) / n3])
+
+    # Normalize to get final u
+    u = u_prime / np.linalg.norm(u_prime)
+
+    # Compute the second basis vector (v) as cross-product of normal and u
+    v = np.cross(normal, u)
+    v /= np.linalg.norm(v)
+
+    return u, v
+
+def triangulate_convex_shape(points, indices):
+    # Step 1: Compute the normal vector (average and normalize)
+    #normal = np.mean(points, axis=0)  # Average center vectors
+    #normal /= np.linalg.norm(normal)  # Normalize
+
+    # Step 2: Project points onto the plane defined by the normal vector
+    #projected_points = np.zeros((len(points), 2))
+    #u, v = compute_orthonormal_basis(normal)
+
+    # Project each point onto the 2D plane using the basis
+    #for i, p in enumerate(points):
+    #    projected_points[i, 0] = np.dot(p, u)  # x-coordinate
+    #    projected_points[i, 1] = np.dot(p, v)  # y-coordinate
+
+    # Step 3: Perform 2D Delaunay triangulation
+
+    projected_points = PCA(n_components=2).fit_transform(points)
+    tri = Delaunay(projected_points)
+    return points[tri.simplices], indices[tri.simplices]
