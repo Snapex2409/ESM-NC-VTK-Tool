@@ -23,6 +23,24 @@ def sort_counterclockwise(points, indices, normal):
     sorting = np.argsort([angle_from_ref(p) for p in points])
     return points[sorting], indices[sorting]
 
+def check_order(points):
+    center = np.mean(points, axis=0)  # Compute centroid
+    ref_vector = points[0] - center  # Reference vector
+
+    def angle_from_ref(p):
+        vec = p - center
+        angle = np.arctan2(np.dot(center, np.cross(ref_vector, vec)), np.dot(ref_vector, vec))
+        return angle
+
+    sorting = np.argsort([angle_from_ref(p) for p in points])
+    sorted = points[sorting]
+    return np.array_equal(sorted, points)
+
+def check_distances(points):
+    d03 = np.linalg.norm(points[0] - points[3])
+    d13 = np.linalg.norm(points[1] - points[3])
+    return d03 < d13
+
 
 def compute_plane_basis(points):
     """Compute an orthonormal basis for the plane using the first three points."""
