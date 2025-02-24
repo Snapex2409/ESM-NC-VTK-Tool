@@ -45,6 +45,7 @@ class NC2VTK:
         clo_cla_points = np.array([np.column_stack((clo[i, :], cla[i, :])) for i in range(dims)])
         if use_filter and msk is not None: clo_cla_points = clo_cla_points[:, msk == 0, :]
         clo_cla_points[np.isclose(clo_cla_points, 0)] = 0.0
+        clo_cla_points = np.round(clo_cla_points, decimals=8)
         unique_points = np.unique(clo_cla_points.reshape((-1, 2)), axis=0)
 
         lon = unique_points[:, 0]

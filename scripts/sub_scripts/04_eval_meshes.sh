@@ -10,7 +10,7 @@ for varA in "${SEA_VARS[@]}"; do
     echo "    [04] Converting $varA to 2D"
     input_file="$DS3/cart/${varA}.vtk"
     output_file="$DS3/geod/${varA}.vtk"
-    envt vtkc "$input_file" --output "$output_file" -cv32
+    envt vtkc "$input_file" --output "$output_file" -cv32 --attach
 done
 
 # eval on 2D mesh
@@ -29,6 +29,6 @@ for varA in "${SEA_VARS[@]}"; do
         echo "    [04] Converting $varA with $fun to 3D"
         input_file="$DS4/geod/${varA}_${fun}.vtk"
         output_file="$DS4/cart/${varA}_${fun}.vtk"
-        envt vtkc "$input_file" --output "$output_file" -cv23
+        envt vtkc "$input_file" --output "$output_file" -cv23 --attach
     done
 done

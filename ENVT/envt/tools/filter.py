@@ -267,6 +267,7 @@ class Filter:
         # load center points and apply filter
         np_points = cv.convert_data_arrays(cv.Mode2DTO3D(), self.lon, self.lat, np.zeros((len(self.lon),)))
         np_points = np_points[valid_points]
+        np_points = np.round(np_points, decimals=5)
         np_points, unique_points = np.unique(np_points, return_index=True, axis=0)
         self.lon = self.lon[valid_points][unique_points]
         self.lat = self.lat[valid_points][unique_points]

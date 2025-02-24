@@ -38,6 +38,7 @@ def main():
     vtkc_parser.add_argument("-cv32", "--conv32", action="store_true",
                              help="Convert 3D cartesian coordinates file to 2D (lat/lon).")
     vtkc_parser.add_argument("-o", "--output", type=str, help="Output file path.", default=None)
+    vtkc_parser.add_argument("-a", "--attach", action="store_true", help="Attaches Connectivity")
 
     # VTK Evaluate mode
     vtke_parser = subparsers.add_parser("vtke", help="Evaluate VTK unstructured grid.")
@@ -84,9 +85,9 @@ def main():
         if args.output is not None: out_path = args.output
         conv = Converter(args.file, out_path)
         if args.conv23:
-            conv.convert(Converter.Mode2DTO3D())
+            conv.convert(Converter.Mode2DTO3D(), args.attach)
         else:
-            conv.convert(Converter.Mode3DTO2D())
+            conv.convert(Converter.Mode3DTO2D(), args.attach)
 
     elif args.mode == "vtke":
         out_path = "./output.vtk"

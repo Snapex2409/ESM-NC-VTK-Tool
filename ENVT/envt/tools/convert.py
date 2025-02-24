@@ -59,7 +59,7 @@ class Converter(vtkw.VTKInputFile):
 
         return Converter.convert_data_arrays(mode, in_arr_d0, in_arr_d1, in_arr_d2)
 
-    def convert(self, mode:Union[Mode2DTO3D, Mode3DTO2D, ModeManual]):
+    def convert(self, mode:Union[Mode2DTO3D, Mode3DTO2D, ModeManual], attach:bool):
         np_point_array = np.array([self.input_points.GetPoint(i) for i in range(self.input_num_points)])
         np_out_array = Converter.convert_data(mode, np_point_array, self.input_num_points)
         out_points_data_array = vtk_np.numpy_to_vtk(np_out_array, deep=True)
@@ -77,6 +77,9 @@ class Converter(vtkw.VTKInputFile):
             for i in range(self.input_point_data.GetNumberOfArrays()):
                 array = self.input_point_data.GetArray(i)
                 output_point_data.AddArray(array)
+
+        if attach:
+            output_unstructured_grid.SetCells(vtkw.VTK_TRIANGLE, self.input_grid.GetCells())
 
         # Write the new 3D VTK unstructured grid to a file
         vtkw.VTKOutputFile(self.outfile, output_unstructured_grid).write()
