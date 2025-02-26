@@ -13,7 +13,7 @@ Data is provided in the /data folder. As the files are large, they can be access
 ### Requirements
 
 * Python Version >= 3.9
-* Modules: TODO
+* Modules: see  [ENVT/requirements.txt](./ENVT/requirements.txt)
 
 ### Steps
 
