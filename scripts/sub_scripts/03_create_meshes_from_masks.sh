@@ -18,5 +18,5 @@ for var in "${SEA_VARS[@]}"; do
     echo "    [03] Filtering $var"
     input_file="$DS2/cart/${var}.vtk"
     output_file="$DS3/cart/${var}.vtk"
-    envt vtkf "$input_file" $NC_MESH $var --output "$output_file" --water
+    envt vtkf "$input_file" $NC_MESH $var --output "$output_file" --water --connect
 done

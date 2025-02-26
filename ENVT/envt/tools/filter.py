@@ -237,7 +237,7 @@ class Filter:
 
         return cell_connections
 
-    def apply(self, output_file, threshold=0.001, denotes_water=False, orig_mask=None):
+    def apply(self, output_file, threshold=0.001, denotes_water=False, orig_mask=None, create_conn=False):
         # load mask data
         np_mask_data = None
         if orig_mask is None:
@@ -297,22 +297,23 @@ class Filter:
         point_data_integral.SetName("area")
 
         # compute new cells based on centers
-        cell_connections = self.compute_cell_connectivity(valid_points, unique_points)
-        tris = self.compute_cell_center_tris_alt2(cell_connections, np_points)
+        if create_conn:
+            cell_connections = self.compute_cell_connectivity(valid_points, unique_points)
+            tris = self.compute_cell_center_tris_alt2(cell_connections, np_points)
 
-        vtk_cells = vtkw.vtkCellArray()
-        for tri in tris:
-            i, j, k = tri
-            vtk_tri = vtkw.vtkTriangle()
-            vtk_tri.GetPointIds().SetId(0, i)
-            vtk_tri.GetPointIds().SetId(1, j)
-            vtk_tri.GetPointIds().SetId(2, k)
-            vtk_cells.InsertNextCell(vtk_tri)
+            vtk_cells = vtkw.vtkCellArray()
+            for tri in tris:
+                i, j, k = tri
+                vtk_tri = vtkw.vtkTriangle()
+                vtk_tri.GetPointIds().SetId(0, i)
+                vtk_tri.GetPointIds().SetId(1, j)
+                vtk_tri.GetPointIds().SetId(2, k)
+                vtk_cells.InsertNextCell(vtk_tri)
 
         out_grid = vtkw.vtkUnstructuredGrid()
         out_points = vtkw.vtkPoints()
         out_points.SetData(vtk_np.numpy_to_vtk(np_points))
         out_grid.SetPoints(out_points)
-        out_grid.SetCells(vtkw.VTK_TRIANGLE, vtk_cells)
+        if create_conn: out_grid.SetCells(vtkw.VTK_TRIANGLE, vtk_cells)
         out_grid.GetPointData().AddArray(point_data_integral)
         vtkw.VTKOutputFile(output_file, out_grid).write()

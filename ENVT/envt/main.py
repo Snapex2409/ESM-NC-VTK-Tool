@@ -58,6 +58,8 @@ def main():
     vtkf_parser.add_argument("-o", "--output", type=str, help="Output file path.", default=None)
     vtkf_parser.add_argument("-w", "--water", action="store_true", help="Flag if mask value denotes water or not.")
     vtkf_parser.add_argument("-m", "--mask", type=str, help="Use original mask data for SEA meshes. Mask file path.", default=None)
+    vtkf_parser.add_argument("-c", "--connect", action="store_true", help="Add Connectivity for Center Mesh.")
+    vtkf_parser.add_argument("-t", "--threshold", type=float, help="Threshold for filtering.", default=0.001)
 
     args = parser.parse_args()
 
@@ -102,7 +104,7 @@ def main():
         out_path = "./output.vtk"
         if args.output is not None: out_path = args.output
         fil = Filter(args.file, ncw.NCVars.get_entry(args.var), args.nc_file)
-        fil.apply(out_path, 0.001, args.water, args.mask)
+        fil.apply(out_path, args.threshold, args.water, args.mask, args.connect)
 
 
 if __name__ == '__main__':
