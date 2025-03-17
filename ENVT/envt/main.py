@@ -49,6 +49,7 @@ def main():
     vtke_parser.add_argument("-d", "--diff", action="store_true",
                              help="Computes difference of VTK data to analytical solution")
     vtke_parser.add_argument("-s", "--source", type=str, help="Source mesh path. Only used in diff mode", default=None)
+    vtke_parser.add_argument("-ov", "--outvtk", type=str, help="Output VTK file.", default=None)
 
     # VTK filtering mode
     vtkf_parser = subparsers.add_parser("vtkf", help="Filter VTK unstructured grid.")
@@ -96,7 +97,7 @@ def main():
         if args.output is not None: out_path = args.output
         ev = Evaluator(args.file, out_path)
         if args.diff:
-            ev.evaluate_diff(args.source, args.function)
+            ev.evaluate_diff(args.source, args.function, args.outvtk, args.function == "gulfstream")
         else:
             ev.evaluate(args.function)
 

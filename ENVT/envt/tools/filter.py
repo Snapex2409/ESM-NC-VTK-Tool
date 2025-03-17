@@ -8,29 +8,45 @@ import vtkmodules.util.numpy_support as vtk_np
 from collections import defaultdict
 
 class Filter:
+    """
+    Applies mapped mask meshes (corner based) to target meshes (center based)
+    and attaches connectivity information for center based mesh if needed.
+    """
+
     def __init__(self, input_file, var:ncw.NCVars, nc_file_path):
         self.vtk_file = vtkw.VTKInputFile(input_file)
+        """Mask VTK file"""
         self.nc_input = ncw.NCFile(nc_file_path)
+        """NC File Original Data"""
         self.clo = self.nc_input.var_clo_data(var)
+        """ Corner data mask full longitude"""
         self.cla = self.nc_input.var_cla_data(var)
+        """ Corner data mask full latitude"""
         msk_lon, msk_lat, msk_entries, msk_corner_indices = NC2VTK.process_corner_data(self.clo, self.cla)
         self.msk_lon = msk_lon
+        """ Unique corner data longitude"""
         self.msk_lat = msk_lat
+        """ Unique corner data latitude"""
         self.msk_num_entries = msk_entries
+        """ Number of unique corner points"""
         self.msk_corner_indices = msk_corner_indices
+        """ Mapping of cells to unique corner points based on indices"""
 
         self.lon = self.nc_input.var_lon_data(var).flatten()
+        """ Center data longitude"""
         self.lat = self.nc_input.var_lat_data(var).flatten()
+        """ Center data latitude"""
         self.var = var
-
-    def check_edge_nb(self, cell_neighbours, edge_to_tris, idx, edge):
-        tris_with_same_edge = edge_to_tris[edge]
-        third_point_of_tris_with_same_edge = {el for tup in tris_with_same_edge for el in tup}
-        third_point_of_tris_with_same_edge.discard(edge[0])
-        third_point_of_tris_with_same_edge.discard(edge[1])
-        return any(idx in cell_neighbours[p] for p in third_point_of_tris_with_same_edge)
+        """ Active variable"""
 
     def check_center(self, cell_neighbours, cell_idx_i, points):
+        """
+        Heuristically determines valid triangles around cell_idx_i that do not overlap
+        :param cell_neighbours: information about which cells neighbour each other
+        :param cell_idx_i: considered cell
+        :param points: cell center positions
+        :return: list of non interfering triangles, or None if no conflict detected
+        """
         neighbours_i = cell_neighbours[cell_idx_i]
         exclusive_tris = []
         for cell_idx_j in neighbours_i:
@@ -62,6 +78,12 @@ class Filter:
         else: return None
 
     def compute_cell_center_tris_alt2(self, cell_neighbours, points):
+        """
+        Computes all valid triangles for the center based mesh
+        :param cell_neighbours: information about which cells neighbour each other
+        :param points: cell center positions
+        :return: set of all valid triangles
+        """
         known_tris = set()
         edge_counts = defaultdict(int)
 
@@ -103,113 +125,13 @@ class Filter:
 
         return known_tris
 
-    def compute_cell_center_tris_alt(self, cell_neighbours):
-        known_tris = set()
-        edge_counts = defaultdict(int)
-        edge_to_tris = defaultdict(set)
-
-        def rec_tri(e, new_idx, limit=10):
-            if limit <= 0: return
-            e0 = e
-            e1 = tuple(sorted((e[0], new_idx)))
-            e2 = tuple(sorted((e[1], new_idx)))
-            tri = tuple(sorted((e[0], e[1], new_idx)))
-            if tri in known_tris: return
-            if edge_counts[e0] >= 2 or edge_counts[e1] >= 2 or edge_counts[e2] >= 2: return
-
-            known_tris.add(tri)
-            edge_counts[e0] += 1
-            edge_counts[e1] += 1
-            edge_counts[e2] += 1
-
-            shared_nb_e0 = cell_neighbours[e0[0]] & cell_neighbours[e0[1]]
-            shared_nb_e0.discard(new_idx)
-            shared_nb_e1 = cell_neighbours[e1[0]] & cell_neighbours[e1[1]]
-            shared_nb_e1.discard(e[1])
-            shared_nb_e2 = cell_neighbours[e2[0]] & cell_neighbours[e2[1]]
-            shared_nb_e2.discard(e[0])
-            lengths = [len(shared_nb_e0), len(shared_nb_e1), len(shared_nb_e2)]
-            smallest = min(lengths)
-            smallest_items = [l for l in lengths if l == smallest]
-            if len(set(smallest_items)) != len(smallest_items): return
-
-            for nb_idx in shared_nb_e0:
-                if lengths[0] == smallest:
-                    rec_tri(e0, nb_idx, limit-1)
-                    break
-            for nb_idx in shared_nb_e1:
-                if lengths[1] == smallest:
-                    rec_tri(e1, nb_idx, limit-1)
-                    break
-            for nb_idx in shared_nb_e2:
-                if lengths[2] == smallest:
-                    rec_tri(e2, nb_idx, limit-1)
-                    break
-
-            for nb_idx in shared_nb_e0:
-                if lengths[0] != smallest:
-                    rec_tri(e0, nb_idx, limit-1)
-                    break
-            for nb_idx in shared_nb_e1:
-                if lengths[1] != smallest:
-                    rec_tri(e1, nb_idx, limit-1)
-                    break
-            for nb_idx in shared_nb_e2:
-                if lengths[2] != smallest:
-                    rec_tri(e2, nb_idx, limit-1)
-                    break
-
-        for cell_idx_i in cell_neighbours.keys():
-            neighbours_i = cell_neighbours[cell_idx_i]
-            for cell_idx_j in neighbours_i:
-                edge = tuple(sorted((cell_idx_i, cell_idx_j)))
-                if edge_counts[edge] >= 2: continue
-
-                neighbours_j = cell_neighbours[cell_idx_j]
-                shared = neighbours_i & neighbours_j
-                for cell_idx_k in shared:
-                    rec_tri(edge, cell_idx_k, 100)
-
-
-        return known_tris
-
-    def compute_cell_center_tris(self, cell_neighbours):
-        known_tris = set()
-        edge_counts = defaultdict(int)
-        edge_to_tris = defaultdict(set)
-
-        for cell_idx_i in cell_neighbours.keys():
-            neighbours_i = cell_neighbours[cell_idx_i]
-            for cell_idx_j in neighbours_i:
-                edge = tuple(sorted((cell_idx_i, cell_idx_j)))
-                if edge_counts[edge] >= 2: continue
-
-                neighbours_j = cell_neighbours[cell_idx_j]
-                shared = neighbours_i & neighbours_j
-                for cell_idx_k in shared:
-                    e0 = edge
-                    e1 = tuple(sorted((cell_idx_i, cell_idx_k)))
-                    e2 = tuple(sorted((cell_idx_j, cell_idx_k)))
-                    if self.check_edge_nb(cell_neighbours, edge_to_tris, cell_idx_k, e0): continue
-                    if self.check_edge_nb(cell_neighbours, edge_to_tris, cell_idx_j, e1): continue
-                    if self.check_edge_nb(cell_neighbours, edge_to_tris, cell_idx_i, e2): continue
-
-                    tri = tuple(sorted((cell_idx_i, cell_idx_j, cell_idx_k)))
-                    if tri in known_tris: continue
-
-                    if edge_counts[e0] >= 2 or edge_counts[e1] >= 2 or edge_counts[e2] >= 2: continue
-
-                    known_tris.add(tri)
-                    edge_counts[e0] += 1
-                    edge_counts[e1] += 1
-                    edge_counts[e2] += 1
-                    edge_to_tris[e0].add(tri)
-                    edge_to_tris[e1].add(tri)
-                    edge_to_tris[e2].add(tri)
-
-        return known_tris
-
     def compute_cell_connectivity(self, valid_cells, unique_cells):
+        """
+        Computes connectivity between cells
+        :param valid_cells: filter for which cells are valid after water filtering
+        :param unique_cells: filter for which cells are unique as some only differ spuriously
+        :return: cell connectivity information
+        """
         corner_indices = self.msk_corner_indices[:,valid_cells][:, unique_cells]
         N, M = corner_indices.shape  # N = corners per cell, M = number of cells
 
@@ -238,6 +160,16 @@ class Filter:
         return cell_connections
 
     def apply(self, output_file, threshold=0.001, denotes_water=False, orig_mask=None, create_conn=False):
+        """
+        Applies mapped mask meshes (corner based) to target meshes (center based)
+        and attaches connectivity information for center based mesh if needed.
+        :param output_file: target VTK output file
+        :param threshold: used to filter out masked cells after mask mapping
+        :param denotes_water: does the mask value need to be inverted (1 - val)?
+        :param orig_mask: path to original mask file (only used for SEA meshes)
+        :param create_conn: should we add connectivity information?
+        :return:
+        """
         # load mask data
         np_mask_data = None
         if orig_mask is None:

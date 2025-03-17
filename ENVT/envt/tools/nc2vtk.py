@@ -6,15 +6,32 @@ import numpy as np
 import vtkmodules.util.numpy_support as vtk_np
 
 class NC2VTK:
+    """Converts NC file data into VTK file format using unstructured arrays"""
     def __init__(self, nc_file_path, msk_file_path):
         self.nc_input = ncw.NCFile(nc_file_path)
+        """NC input data"""
         self.msk_input = ncw.NCFile(msk_file_path) if msk_file_path is not None else None
+        """Mask input data"""
 
     def nc2vtk(self, var:ncw.NCVars, output_path, use_filter:bool, use_corner:bool):
+        """
+        Converts NC data into VTK format, selects implementation based on params
+        :param var: active variable
+        :param output_path: output VTK file path
+        :param use_filter: should we already filter out points? (only possible for SEA meshes)
+        :param use_corner: should the target mesh use corner data? (alternative is center)
+        :return:
+        """
         grid = self._nc2vtk_corner(var, use_filter) if use_corner else self._nc2vtk_center(var, use_filter)
         vtkw.VTKOutputFile(output_path, grid).write()
 
     def _nc2vtk_center(self, var:ncw.NCVars, use_filter:bool):
+        """
+        Extracts center based mesh
+        :param var: active variable
+        :param use_filter: should we already filter out points? (only possible for SEA meshes)
+        :return:
+        """
         lon = self.nc_input.var_lon_data(var).flatten()
         lat = self.nc_input.var_lat_data(var).flatten()
         msk = self.msk_input.var_msk_data(var).flatten() if self.msk_input is not None else None
@@ -39,6 +56,14 @@ class NC2VTK:
 
     @staticmethod
     def process_corner_data(clo, cla, msk=None, use_filter=False):
+        """
+        Determines unique points of corner data and filters out numerically spurious different points
+        :param clo: clo data array
+        :param cla: cla data array
+        :param msk: mask data array
+        :param use_filter: should we apply the mask?
+        :return: tuple of (lon, lat, num_entries, corner_indices)
+        """
         dims = clo.shape[0]
         clo = np.array([clo[i, :, :].flatten() for i in range(dims)])
         cla = np.array([cla[i, :, :].flatten() for i in range(dims)])
@@ -58,12 +83,26 @@ class NC2VTK:
         return lon, lat, num_entries, corner_indices
 
     def _nc2vtk_corner(self, var:ncw.NCVars, use_filter:bool):
+        """
+        Extracts coner based mesh
+        :param var: active variable
+        :param use_filter: should we already filter out points? (only possible for SEA meshes)
+        :return:
+        """
         clo = self.nc_input.var_clo_data(var)
         cla = self.nc_input.var_cla_data(var)
         msk = self.msk_input.var_msk_data(var).flatten() if self.msk_input is not None else None
         lon, lat, num_entries, corner_indices = NC2VTK.process_corner_data(clo, cla, msk, use_filter)
 
         cart_points = cv.convert_data_arrays(cv.Mode2DTO3D(), lon, lat, np.zeros((len(lon),)))
+
+        if var == ncw.NCVars.TORC:
+            # we want to add one point at the South Pole here
+            tmp = np.zeros((len(cart_points)+1, 3))
+            tmp[0:-1,:] = cart_points
+            tmp[-1, :] = np.average(cart_points[cart_points[:, 2] <= -6215000], axis=0)
+            cart_points = tmp
+
         cart_points_data_array = vtk_np.numpy_to_vtk(cart_points, deep=True)
 
         vtk_points = vtkw.vtkPoints()
@@ -91,6 +130,23 @@ class NC2VTK:
 
             if msk is not None and msk[i] == 0:
                 nfilter_msk[indices] = 1.0
+
+        if var == ncw.NCVars.TORC:
+            total_indices = np.arange(len(cart_points))
+            low_indices = total_indices[cart_points[:, 2] <= -6215000]
+            _, tris = triangulate(cart_points[low_indices], low_indices)
+            for idx_tri in range(tris.shape[0]):
+                tri = vtkw.vtkTriangle()
+                tri.GetPointIds().SetId(0, tris[idx_tri][0])
+                tri.GetPointIds().SetId(1, tris[idx_tri][1])
+                tri.GetPointIds().SetId(2, tris[idx_tri][2])
+                vtk_cells.InsertNextCell(tri)
+
+            if msk is not None:
+                tmp = np.zeros((len(cart_points),))
+                tmp[0:-1] = nfilter_msk
+                nfilter_msk = tmp
+                nfilter_msk[low_indices] = 0.0
 
         unstructured_grid = vtkw.vtkUnstructuredGrid()
         unstructured_grid.SetPoints(vtk_points)

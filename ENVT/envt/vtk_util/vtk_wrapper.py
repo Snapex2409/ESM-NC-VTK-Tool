@@ -16,22 +16,34 @@ def vtkPolygon(): return vtk.vtkPolygon()
 def vtkTriangle():return vtk.vtkTriangle()
 
 class VTKInputFile:
+    """
+    Represents an input VTK file, automatically loads file and extracts relevant aspects
+    """
     def __init__(self, filename):
         self.infile = filename
+        """Path to VTK file"""
         reader = vtkUnstructuredGridReader()
         reader.SetFileName(filename)
         reader.Update()
         self.input_grid = reader.GetOutput()
-
+        """VTK Grid"""
         # Extract points from the grid
         self.input_points = self.input_grid.GetPoints()
+        """Grid Points"""
         self.input_point_data = self.input_grid.GetPointData()
+        """Point Data Arrays"""
         self.input_num_points = self.input_points.GetNumberOfPoints()
+        """Number of Points"""
 
 class VTKOutputFile:
+    """
+    Represents an output VTK file, writes file on calling write
+    """
     def __init__(self, filename, grid):
         self.outfile = filename
+        """Path to VTK file"""
         self.grid = grid
+        """VTK Grid"""
 
     def write(self):
         writer = vtkUnstructuredGridWriter()

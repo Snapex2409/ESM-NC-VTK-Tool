@@ -1,6 +1,11 @@
 import numpy as np
 
 def fun_sinusoid(points):
+    """
+    Slowly varying standard sinusoid over the globe
+    :param points: evaluation points
+    :return: function at points
+    """
     xcoord = points[:, 0]
     ycoord = points[:, 1]
     conv = np.pi / 180.0
@@ -11,6 +16,12 @@ def fun_sinusoid(points):
     return evaluated
 
 def fun_harmonic(points):
+    """
+    More rapidly varying function with 16 maximums and 16 minimums in
+    northern and southern bands
+    :param points: evaluation points
+    :return: function at points
+    """
     xcoord = points[:, 0]
     ycoord = points[:, 1]
     conv = np.pi / 180.0
@@ -18,6 +29,12 @@ def fun_harmonic(points):
     return evaluated
 
 def fun_vortex(points):
+    """
+    Slowly varying function with two added vortices, one in the Atlantic and
+    one over Indonesia
+    :param points: evaluation points
+    :return: function at points
+    """
     xcoord = points[:, 0]
     ycoord = points[:, 1]
     conv = np.pi / 180.0
@@ -48,7 +65,13 @@ def fun_vortex(points):
     evaluated = 2.0 * (1.0 + np.tanh(rho / D * np.sin(lon - omega * T)))
     return evaluated
 
-def fun_gulfstream(points):
+def fun_gulfstream(points, offset=1):
+    """
+    Slowly varying standard sinusoid with a mimicked Gulf Stream.
+    :param points: evaluation points
+    :param offset: offsets output to avoid 0 values
+    :return: function at points
+    """
     xcoord = points[:, 0]
     ycoord = points[:, 1]
     conv = np.pi / 180.0
@@ -75,4 +98,4 @@ def fun_gulfstream(points):
     dc[dr > dr0] = 0.0
     dc[dr > dr1] *= np.cos(np.pi*0.5*(dr[dr > dr1]-dr1)/(dr0-dr1))
     evaluated += (np.maximum(1000.0*np.sin(0.4*(0.5*dr+dth) + 0.007*np.cos(50.0*dth) + 0.37*np.pi), 999.0) - 999.0) * dc
-    return evaluated
+    return evaluated + offset

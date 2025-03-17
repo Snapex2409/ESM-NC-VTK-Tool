@@ -25,7 +25,11 @@
     <receive-mesh name="A-Mesh" from="A" />
     <provide-mesh name="B-Mesh" />
     <read-data name="Data" mesh="B-Mesh" />
-    <mapping:nearest-neighbor direction="read" from="A-Mesh" to="B-Mesh" constraint="consistent"/>
+    <!--mapping:nearest-neighbor direction="read" from="A-Mesh" to="B-Mesh" constraint="consistent"/-->
+    <!--mapping:nearest-projection direction="read" from="A-Mesh" to="B-Mesh" constraint="consistent"/-->
+    <!--mapping:rbf-pum-direct relative-overlap="0.15" vertices-per-cluster="50" constraint="consistent" direction="read" from="A-Mesh" polynomial="separate" to="B-Mesh" project-to-input="1">
+      <basis-function:compact-polynomial-c6 support-radius="1e3"/>
+    </mapping:rbf-pum-direct-->
   </participant>
 
   <m2n:sockets acceptor="A" connector="B" exchange-directory="." />
