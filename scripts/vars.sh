@@ -26,8 +26,7 @@ DS6="${OUT}/06_metrics/$RES"
 SEA_VARS=("nogt" "torc")
 ATM_VARS=("bggd" "icoh" "icos" "sse7" "ssea")
 FUNCTIONS=("sinusoid" "harmonic" "vortex" "gulfstream")
-#MAPPINGS=("nn" "np" "rbf")
-MAPPINGS=("rbf")
+MAPPINGS=("nn" "np" "rbf")
 
 THRESHOLD=0.001
 

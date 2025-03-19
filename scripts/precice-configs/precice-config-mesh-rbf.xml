@@ -25,8 +25,8 @@
     <receive-mesh name="A-Mesh" from="A" />
     <provide-mesh name="B-Mesh" />
     <read-data name="Data" mesh="B-Mesh" />
-    <mapping:rbf-pum-direct relative-overlap="0.15" vertices-per-cluster="50" constraint="consistent" direction="read" from="A-Mesh" polynomial="separate" to="B-Mesh" project-to-input="1">
-      <basis-function:compact-polynomial-c6 support-radius="1e5"/>
+    <mapping:rbf-pum-direct relative-overlap="0.10" vertices-per-cluster="350" constraint="consistent" direction="read" from="A-Mesh" polynomial="separate" to="B-Mesh" project-to-input="1">
+      <basis-function:compact-polynomial-c6 support-radius="2.0e6"/>
     </mapping:rbf-pum-direct>
   </participant>
 
