@@ -49,6 +49,7 @@ class Filter:
         """
         neighbours_i = cell_neighbours[cell_idx_i]
         exclusive_tris = []
+        optional_tris = []
         for cell_idx_j in neighbours_i:
             neighbours_j = cell_neighbours[cell_idx_j]
             shared_ij = neighbours_i & neighbours_j
@@ -74,7 +75,15 @@ class Filter:
                         exclusive_tris.append((sorting[0], sorting[1], sorting[2]))
                         exclusive_tris.append((sorting[1], sorting[2], sorting[3]))
 
-        if len(exclusive_tris)>0: return exclusive_tris
+                # we detected a non-conflicting triangle ijk
+                # need to store it and return it as well, if we detect interfering quads
+                if len(shared_ijk) == 0:
+                    opt_tri = tuple(sorted((cell_idx_i, cell_idx_j, cell_idx_k)))
+                    optional_tris.append(opt_tri)
+
+        if len(exclusive_tris)>0:
+            exclusive_tris.extend(optional_tris)
+            return exclusive_tris
         else: return None
 
     def compute_cell_center_tris_alt2(self, cell_neighbours, points):
