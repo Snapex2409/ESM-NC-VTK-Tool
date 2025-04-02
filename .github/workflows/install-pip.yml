@@ -16,6 +16,9 @@ jobs:
       uses: actions/setup-python@v5.5.0
       with:
         python-version: "3.9.20"
+    - name: Install proj binaries
+      run: |
+        sudo apt-get install proj-bin -y
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
