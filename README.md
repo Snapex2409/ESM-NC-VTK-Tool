@@ -11,9 +11,10 @@ Data is provided in the /data folder. As the files are large, they can be access
 ## Installation
 
 ### Requirements
-
-* Python Version >= 3.9
-* Modules: see  [ENVT/requirements.txt](./ENVT/requirements.txt)
+* Due to module issues we only support the following anaconda environment.
+* Python Version == 3.9.20
+* Modules: see  [ENVT/requirements.yml](./ENVT/requirements.yml)
+* Create env with: `conda env create -f ./ENVT/requirements.yml`
 
 ### Steps
 
