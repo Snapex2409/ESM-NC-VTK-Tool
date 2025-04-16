@@ -76,7 +76,6 @@ Provided NC files contain meshes and masks. There are the following meshes:
 * icos (cells: 15.212)
 * nogt (cells: 106.428)
 * sse7 (cells: 24.572)
-* ssea (cells: 24.572)
 * torc (cells: 27.118)
 
 The mesh NC file has fields `<var_name>.lon` `<var_name>.lat` `<var_name>.clo` `<var_name>.cla`.
@@ -87,7 +86,7 @@ As a general categorization, the meshes are split into 2 groups.
 
 SEA-MESHES: torc, nogt
 
-ATM-MESHES: bggd, icoh, icos, sse7, ssea
+ATM-MESHES: bggd, icoh, icos, sse7
 
 ## Benchmark
 
@@ -105,6 +104,7 @@ For finer control, each step can be executed individually in the /scripts/subscr
 
 The behaviour of these scripts can be controlled via the /scripts/vars.sh file.
 
+For more detailed information refer to the instructions given in [reproducability.md](./reproducability.md).
 ### Requirements
 
 * working installation of preCICE and preCICE-ASTE

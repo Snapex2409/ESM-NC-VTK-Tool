@@ -24,10 +24,11 @@ DS6="${OUT}/06_metrics/$RES"
 
 
 SEA_VARS=("nogt" "torc")
-ATM_VARS=("bggd" "icoh" "icos" "sse7" "ssea")
+ATM_VARS=("bggd" "icoh" "icos" "sse7")
 FUNCTIONS=("sinusoid" "harmonic" "vortex" "gulfstream")
 MAPPINGS=("nn" "np" "rbf")
 
 THRESHOLD=0.001
+BAD_TORC=0
 
 cd $OPWD
