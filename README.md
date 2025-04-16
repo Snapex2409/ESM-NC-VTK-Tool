@@ -71,13 +71,13 @@ Filters the mesh defined by center points based on the mapped mask defined by it
 ## Data 
 
 Provided NC files contain meshes and masks. There are the following meshes:
-* bggd
-* icoh
-* icos
-* nogt
-* sse7
-* ssea
-* torc
+* bggd (cells: 20.592)
+* icoh (cells: 2.016.012)
+* icos (cells: 15.212)
+* nogt (cells: 106.428)
+* sse7 (cells: 24.572)
+* ssea (cells: 24.572)
+* torc (cells: 27.118)
 
 The mesh NC file has fields `<var_name>.lon` `<var_name>.lat` `<var_name>.clo` `<var_name>.cla`.
 All fields describe coordinates in geodesic coordinate system. Meshes are discretized by many cells.

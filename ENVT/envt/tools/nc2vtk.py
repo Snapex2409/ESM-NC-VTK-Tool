@@ -13,7 +13,7 @@ class NC2VTK:
         self.msk_input = ncw.NCFile(msk_file_path) if msk_file_path is not None else None
         """Mask input data"""
 
-    def nc2vtk(self, var:ncw.NCVars, output_path, use_filter:bool, use_corner:bool):
+    def nc2vtk(self, var:ncw.NCVars, output_path, use_filter:bool, use_corner:bool, use_torc_fix:bool=True):
         """
         Converts NC data into VTK format, selects implementation based on params
         :param var: active variable
@@ -22,7 +22,7 @@ class NC2VTK:
         :param use_corner: should the target mesh use corner data? (alternative is center)
         :return:
         """
-        grid = self._nc2vtk_corner(var, use_filter) if use_corner else self._nc2vtk_center(var, use_filter)
+        grid = self._nc2vtk_corner(var, use_filter, use_torc_fix) if use_corner else self._nc2vtk_center(var, use_filter)
         vtkw.VTKOutputFile(output_path, grid).write()
 
     def _nc2vtk_center(self, var:ncw.NCVars, use_filter:bool):
@@ -82,35 +82,26 @@ class NC2VTK:
         corner_indices = np.array([[coord_2_unique_idx[tuple(point)] for point in corner_coords[i, :, :]] for i in range(dims)])
         return lon, lat, num_entries, corner_indices
 
-    def _nc2vtk_corner(self, var:ncw.NCVars, use_filter:bool):
-        """
-        Extracts coner based mesh
-        :param var: active variable
-        :param use_filter: should we already filter out points? (only possible for SEA meshes)
-        :return:
-        """
-        clo = self.nc_input.var_clo_data(var)
-        cla = self.nc_input.var_cla_data(var)
-        msk = self.msk_input.var_msk_data(var).flatten() if self.msk_input is not None else None
-        lon, lat, num_entries, corner_indices = NC2VTK.process_corner_data(clo, cla, msk, use_filter)
-
+    @staticmethod
+    def generate_corner_u_grid(lon, lat, num_entries, corner_indices, var, msk, use_filter, create_conn, use_torc_fix:bool=True):
         cart_points = cv.convert_data_arrays(cv.Mode2DTO3D(), lon, lat, np.zeros((len(lon),)))
 
-        if var == ncw.NCVars.TORC:
+        if var == ncw.NCVars.TORC and use_torc_fix:
             # we want to add one point at the South Pole here
-            tmp = np.zeros((len(cart_points)+1, 3))
-            tmp[0:-1,:] = cart_points
+            tmp = np.zeros((len(cart_points) + 1, 3))
+            tmp[0:-1, :] = cart_points
             tmp[-1, :] = np.average(cart_points[cart_points[:, 2] <= -6215000], axis=0)
             cart_points = tmp
 
         cart_points_data_array = vtk_np.numpy_to_vtk(cart_points, deep=True)
-
         vtk_points = vtkw.vtkPoints()
         vtk_points.SetData(cart_points_data_array)
 
-        vtk_cells = vtkw.vtkCellArray()
+        if create_conn: vtk_cells = vtkw.vtkCellArray()
         if msk is not None:
             nfilter_msk = np.zeros((len(lon),))
+            override_zero = list()
+
         for i in range(num_entries):
             # triangulate points
             # first filter out duplicates
@@ -118,20 +109,37 @@ class NC2VTK:
             indices = np.unique(indices)
             if len(indices) < 3: continue
 
+            # mark cells as valid
+            if msk is not None and msk[i] == 0:
+                nfilter_msk[indices] = 1.0
+
             points = cart_points[indices]
             _, tri_indices = triangulate(points, indices)
 
             for idx_tri in range(tri_indices.shape[0]):
-                tri = vtkw.vtkTriangle()
-                tri.GetPointIds().SetId(0, tri_indices[idx_tri][0])
-                tri.GetPointIds().SetId(1, tri_indices[idx_tri][1])
-                tri.GetPointIds().SetId(2, tri_indices[idx_tri][2])
-                vtk_cells.InsertNextCell(tri)
+                if create_conn:
+                    if var == ncw.NCVars.TORC and use_torc_fix:
+                        TORC_THRESHOLD = 1e+6
+                        p1 = cart_points[tri_indices[idx_tri][0]]
+                        p2 = cart_points[tri_indices[idx_tri][1]]
+                        p3 = cart_points[tri_indices[idx_tri][2]]
+                        l1 = np.linalg.norm(p1 - p2)
+                        l2 = np.linalg.norm(p2 - p3)
+                        l3 = np.linalg.norm(p3 - p1)
+                        if l1 > TORC_THRESHOLD or l2 > TORC_THRESHOLD or l3 > TORC_THRESHOLD:
+                            if msk is not None:
+                                override_zero.append(tri_indices[idx_tri][0])
+                                override_zero.append(tri_indices[idx_tri][1])
+                                override_zero.append(tri_indices[idx_tri][2])
+                            continue
 
-            if msk is not None and msk[i] == 0:
-                nfilter_msk[indices] = 1.0
+                    tri = vtkw.vtkTriangle()
+                    tri.GetPointIds().SetId(0, tri_indices[idx_tri][0])
+                    tri.GetPointIds().SetId(1, tri_indices[idx_tri][1])
+                    tri.GetPointIds().SetId(2, tri_indices[idx_tri][2])
+                    vtk_cells.InsertNextCell(tri)
 
-        if var == ncw.NCVars.TORC:
+        if var == ncw.NCVars.TORC and use_torc_fix:
             total_indices = np.arange(len(cart_points))
             low_indices = total_indices[cart_points[:, 2] <= -6215000]
             _, tris = triangulate(cart_points[low_indices], low_indices)
@@ -148,6 +156,8 @@ class NC2VTK:
                 nfilter_msk = tmp
                 nfilter_msk[low_indices] = 0.0
 
+                nfilter_msk[np.array(list(set(override_zero)))] = 0.0
+
         unstructured_grid = vtkw.vtkUnstructuredGrid()
         unstructured_grid.SetPoints(vtk_points)
         unstructured_grid.SetCells(vtkw.VTK_TRIANGLE, vtk_cells)
@@ -163,3 +173,16 @@ class NC2VTK:
                 unstructured_grid.GetPointData().AddArray(vtk_point_data)
 
         return unstructured_grid
+
+    def _nc2vtk_corner(self, var:ncw.NCVars, use_filter:bool, use_torc_fix:bool=True):
+        """
+        Extracts coner based mesh
+        :param var: active variable
+        :param use_filter: should we already filter out points? (only possible for SEA meshes)
+        :return:
+        """
+        clo = self.nc_input.var_clo_data(var)
+        cla = self.nc_input.var_cla_data(var)
+        msk = self.msk_input.var_msk_data(var).flatten() if self.msk_input is not None else None
+        lon, lat, num_entries, corner_indices = NC2VTK.process_corner_data(clo, cla, msk, use_filter)
+        return NC2VTK.generate_corner_u_grid(lon, lat, num_entries, corner_indices, var, msk, use_filter, True, use_torc_fix)

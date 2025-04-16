@@ -29,6 +29,7 @@ def main():
     vtk_parser.add_argument("-m", "--mask", type=str, help="Mask file path.", default=None)
     vtk_parser.add_argument("-o", "--output", type=str, help="Output file path.", default=None)
     vtk_parser.add_argument("-f", "--filter", action="store_true", help="Filter out land cells")
+    vtk_parser.add_argument("-ntf", "--notorcfix", action="store_true", help="Disable TORC_FIX.")
 
     # VTK Convert mode
     vtkc_parser = subparsers.add_parser("vtkc", help="Convert VTK unstructured grid.")
@@ -58,9 +59,9 @@ def main():
     vtkf_parser.add_argument("var", type=str, help="Variable name prefix (e.g., 'torc').")
     vtkf_parser.add_argument("-o", "--output", type=str, help="Output file path.", default=None)
     vtkf_parser.add_argument("-w", "--water", action="store_true", help="Flag if mask value denotes water or not.")
-    vtkf_parser.add_argument("-m", "--mask", type=str, help="Use original mask data for SEA meshes. Mask file path.", default=None)
     vtkf_parser.add_argument("-c", "--connect", action="store_true", help="Add Connectivity for Center Mesh.")
     vtkf_parser.add_argument("-t", "--threshold", type=float, help="Threshold for filtering.", default=0.001)
+    vtkf_parser.add_argument("-co", "--corner", action="store_true", help="Use corner coordinates (clo/cla).")
 
     args = parser.parse_args()
 
@@ -81,7 +82,7 @@ def main():
         conv = NC2VTK(args.file, args.mask)
         out_path = "./output.vtk"
         if args.output is not None: out_path = args.output
-        conv.nc2vtk(ncw.NCVars.get_entry(args.var), out_path, args.filter, args.corner)
+        conv.nc2vtk(ncw.NCVars.get_entry(args.var), out_path, args.filter, args.corner, not args.notorcfix)
 
     elif args.mode == "vtkc":
         out_path = "./output.vtk"
@@ -105,7 +106,8 @@ def main():
         out_path = "./output.vtk"
         if args.output is not None: out_path = args.output
         fil = Filter(args.file, ncw.NCVars.get_entry(args.var), args.nc_file)
-        fil.apply(out_path, args.threshold, args.water, args.mask, args.connect)
+        if args.corner: fil.apply_corner(out_path, args.threshold, args.water, args.connect)
+        else: fil.apply(out_path, args.threshold, args.water, args.connect)
 
 
 if __name__ == '__main__':

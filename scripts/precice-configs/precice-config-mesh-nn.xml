@@ -25,6 +25,7 @@
     <receive-mesh name="A-Mesh" from="A" />
     <provide-mesh name="B-Mesh" />
     <read-data name="Data" mesh="B-Mesh" />
+    <!--mapping:nearest-neighbor direction="read" from="A-Mesh" to="B-Mesh" constraint="scaled-consistent-surface"/-->
     <mapping:nearest-neighbor direction="read" from="A-Mesh" to="B-Mesh" constraint="consistent"/>
   </participant>
 

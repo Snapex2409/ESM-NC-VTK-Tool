@@ -168,42 +168,46 @@ class Filter:
 
         return cell_connections
 
-    def apply(self, output_file, threshold=0.001, denotes_water=False, orig_mask=None, create_conn=False):
+    def gather_cell_mask(self):
+        np_mask_data = None
+        for i in range(self.vtk_file.input_point_data.GetNumberOfArrays()):
+            array = self.vtk_file.input_point_data.GetArray(i)
+            if array.GetName() == "mask":
+                np_mask_data = vtk_np.vtk_to_numpy(array)
+                break
+        if np_mask_data is None:
+            print("WARNING: No mask data available")
+            return None
+        np_cell_mask = np.average(np_mask_data[self.msk_corner_indices], axis=0)
+        return np_cell_mask
+
+    @staticmethod
+    def get_valid_cells(denotes_water, threshold, mask):
+        if denotes_water:
+            valid_points = mask > threshold
+        else:
+            ones = np.ones_like(mask)
+            land_amount = np.minimum(ones, mask)
+            water_amount = ones - land_amount
+            valid_points = water_amount > threshold
+        return valid_points
+
+    def apply(self, output_file, threshold=0.001, denotes_water=False, create_conn=False):
         """
         Applies mapped mask meshes (corner based) to target meshes (center based)
         and attaches connectivity information for center based mesh if needed.
         :param output_file: target VTK output file
         :param threshold: used to filter out masked cells after mask mapping
         :param denotes_water: does the mask value need to be inverted (1 - val)?
-        :param orig_mask: path to original mask file (only used for SEA meshes)
         :param create_conn: should we add connectivity information?
         :return:
         """
         # load mask data
-        np_mask_data = None
-        if orig_mask is None:
-            for i in range(self.vtk_file.input_point_data.GetNumberOfArrays()):
-                array = self.vtk_file.input_point_data.GetArray(i)
-                if array.GetName() == "mask":
-                    np_mask_data = vtk_np.vtk_to_numpy(array)
-                    break
-            if np_mask_data is None:
-                print("WARNING: No mask data available")
-                return
-            np_cell_mask = np.average(np_mask_data[self.msk_corner_indices], axis=0)
-        else:
-            msk_file = ncw.NCFile(orig_mask)
-            np_cell_mask = msk_file.var_msk_data(self.var).flatten()
+        np_cell_mask = self.gather_cell_mask()
+        if np_cell_mask is None: return
 
         # find valid cells
-        valid_points = None
-        if denotes_water:
-            valid_points = np_cell_mask > threshold
-        else:
-            ones = np.ones_like(np_cell_mask)
-            land_amount = np.minimum(ones, np_cell_mask)
-            water_amount = ones - land_amount
-            valid_points = water_amount > threshold
+        valid_points = Filter.get_valid_cells(denotes_water, threshold, np_cell_mask)
 
         # load center points and apply filter
         np_points = cv.convert_data_arrays(cv.Mode2DTO3D(), self.lon, self.lat, np.zeros((len(self.lon),)))
@@ -258,3 +262,17 @@ class Filter:
         if create_conn: out_grid.SetCells(vtkw.VTK_TRIANGLE, vtk_cells)
         out_grid.GetPointData().AddArray(point_data_integral)
         vtkw.VTKOutputFile(output_file, out_grid).write()
+
+    def apply_corner(self, output_file, threshold=0.001, denotes_water=False, create_conn=False):
+        # load mask data
+        np_cell_mask = self.gather_cell_mask()
+        if np_cell_mask is None: return
+
+        # need to invert mask for valid cells
+        valid_cells = Filter.get_valid_cells(denotes_water, threshold, np_cell_mask)
+        mask = np.ones_like(valid_cells)
+        mask[valid_cells] = 0
+
+        lon, lat, num_entries, corner_indices = NC2VTK.process_corner_data(self.clo, self.cla, mask, True)
+        grid = NC2VTK.generate_corner_u_grid(lon, lat, num_entries, corner_indices, self.var, mask, True, True)
+        vtkw.VTKOutputFile(output_file, grid).write()
