@@ -40,22 +40,25 @@ Plot provided data into a png file.
 
 Creates a VTK file from NC data. Output will be in 3D cartesian coordinate system.
 
-`envt vtk <file.nc> --var <var> [--corner] [--mask <mask.nc>] [--output <output.vtk>] [--filter]`
+`envt vtk <file.nc> --var <var> [--corner] [--mask <mask.nc>] [--output <output.vtk>] [--filter] [--notorcfix]`
 * specifying --corner creates a mesh based on cell corners containing connectivity information
 * specifying --mask attaches mask data to output
 * specifying --filter filters out all cells containing 0 as mask data, mask must be provided
+* specifying --notorcfix disables mesh fixes for the torc mesh
 
 #### VTKC
 
 Converts VTK data between cartesian and geodesic coordinate systems.
 
-`envt vtkc <file.vtk> (--conv23|--conv32) [--output <output.vtk>]`
+`envt vtkc <file.vtk> (--conv23|--conv32) [--output <output.vtk>] [--attach]`
+* conv`<a><b>` converts from a to b
+* specifying --attach will attach connectivity information from the input mesh to the output mesh
 
 #### VTKE
 
 Evaluates the given mesh using the selected predefined test function. Test function as described in original benchmarking paper.
 
-`envt vtke <file.vtk> --function <fun> [--output <output.vtk>] [--diff --source <original_mesh.vtk>]`
+`envt vtke <file.vtk> --function <fun> [--output <output.vtk>] [--diff --source <original_mesh.vtk>] [--outvtk <output_vtk_path.vtk>]`
 
 * Options for `<fun>` are: sinusoid, harmonic, vortex, golfstream
 * specifying diff creates statistics and compares the mesh after mapping to the original mesh
@@ -64,9 +67,12 @@ Evaluates the given mesh using the selected predefined test function. Test funct
 
 Filters the mesh defined by center points based on the mapped mask defined by its corner points. Also attaches cell sizes to each point.
 
-`envt vtkf <file.vtk> <file.nc> <var> [--output <output.vtk>] --water`
+`envt vtkf <file.vtk> <file.nc> <var> [--output <output.vtk>] [--water] [--connect] [--corner] [--threshold <float>] `
 
 * specifying --water inverts the treatment of the mask values
+* specifying --connect creates connectivity information for the output mesh
+* specifying --corner creates an output based on corner points of cells, instead of centers
+* --threshold defines the threshold level based on which cells are filtered out from the mask
 
 ## Data 
 
