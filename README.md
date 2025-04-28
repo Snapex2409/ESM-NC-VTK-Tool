@@ -16,6 +16,14 @@ Data is provided in the /data folder. As the files are large, they can be access
 * Modules: see  [ENVT/requirements.yml](./ENVT/requirements.yml)
 * Create env with: `conda env create -f ./ENVT/requirements.yml`
 
+If this does not work, try to install the modules manually:
+* netCDF4
+* matplotlib
+* scipy
+* scikit-learn
+* vtk
+* pyproj
+
 ### Steps
 
 * clone repository
