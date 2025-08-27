@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import scripts.plotting.util.io as io
-from scripts.plotting.data_loaders.ReferenceMetrics import *
-from scripts.plotting.data_loaders.Metrics import *
-from scripts.plotting.util.plot_helpers import plot_data_field, plot_res_scaling, plot_data_field_merged, plot_data_field_merged_bar
+import util.io as io
+from data_loaders.ReferenceMetrics import *
+from data_loaders.Metrics import *
+from util.plot_helpers import plot_data_field_merged_bar
 
 if __name__ == '__main__':
     # load reference
