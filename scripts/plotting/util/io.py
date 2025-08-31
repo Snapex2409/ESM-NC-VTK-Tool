@@ -1,5 +1,6 @@
 import numpy as np
 import json
+import os
 
 def read_cols(path, cols=(0, 1)):
     data = np.loadtxt(path, usecols=cols)
@@ -11,3 +12,9 @@ def read_json(path):
             return json.load(file)
     except Exception:
         return None
+
+def makedirs(path):
+    try:
+        if not os.path.exists(path): os.makedirs(path)
+    except OSError:
+        pass
