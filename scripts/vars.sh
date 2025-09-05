@@ -21,12 +21,17 @@ DS3="${OUT}/03_center_meshes/${RES}"
 DS4="${OUT}/04_evaluated_meshes/${RES}"
 DS5="${OUT}/05_mapped_meshes/${RES}"
 DS6="${OUT}/06_metrics/${RES}"
+DPERF="${OUT}/strong_scaling"
 
 
 SEA_VARS=("nogt" "torc")
 ATM_VARS=("bggd" "icos" "sse7") # excluding icoh for faster computation
 FUNCTIONS=("sinusoid" "harmonic" "vortex" "gulfstream")
 MAPPINGS=("nn" "np" "rbf")
+PARTITIONS=(1 2 4 8)
+ITERATIONS=10
+MPI_ARGS_A="" # set this up for your local environment
+MPI_ARGS_B="" # set this up for your local environment
 
 THRESHOLD=0.2
 BAD_TORC=0
