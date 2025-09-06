@@ -49,11 +49,12 @@ for (( i=1; i<=$ITERATIONS; i++ )); do
                             input_fileB="$DS4/cart/${varB}_masked_by_${varA}_${fun}_${pB}/${varB}_masked_by_${varA}_${fun}"
                             output_file="tmp-out"
 
-                            mpirun -n "$pA" "$MPI_ARGS_A" precice-aste-run -v -a -p A --mesh "$input_fileA" --data "eval" || kill 0 &
-                            mpirun -n "$pB" "$MPI_ARGS_B" precice-aste-run -v -a -p B --mesh "$input_fileB" --output "$output_file" --data "eval-mapped" || kill 0 & wait
+                            bash ../mpi-cmd.sh "$pA" "$MPI_ARGS_A" "$input_fileA" "$pB" "$MPI_ARGS_B" "$input_fileB" "$output_file"
 
                             outdir="$DPERF/$mapping/${varA}_to_${varB}_masked_by_${varA}/${fun}/p${pA}_to_p${pB}/it${i}"
                             mkdir -p "$outdir"
+                            rm -rf "${outdir}/precice-profiling"
+                            rm -rf "${outdir}/precice-run"
                             mv "./precice-profiling" "$outdir"
                             mv "./precice-run" "$outdir"
                             rm -rf "$output_file"
@@ -69,11 +70,12 @@ for (( i=1; i<=$ITERATIONS; i++ )); do
                             input_fileB="$DS4/cart/${varA}_${fun}_${pB}/${varA}_${fun}"
                             output_file="tmp-out"
 
-                            mpirun -n "$pA" "$MPI_ARGS_A" precice-aste-run -v -a -p A --mesh "$input_fileA" --data "eval" || kill 0 &
-                            mpirun -n "$pB" "$MPI_ARGS_B" precice-aste-run -v -a -p B --mesh "$input_fileB" --output "$output_file" --data "eval-mapped" || kill 0 & wait
+                            bash ../mpi-cmd.sh "$pA" "$MPI_ARGS_A" "$input_fileA" "$pB" "$MPI_ARGS_B" "$input_fileB" "$output_file"
 
                             outdir="$DPERF/$mapping/${varB}_masked_by_${varA}_to_${varA}/${fun}/p${pA}_to_p${pB}/it${i}"
                             mkdir -p "$outdir"
+                            rm -rf "${outdir}/precice-profiling"
+                            rm -rf "${outdir}/precice-run"
                             mv "./precice-profiling" "$outdir"
                             mv "./precice-run" "$outdir"
                             rm -rf "$output_file"
@@ -93,11 +95,12 @@ for (( i=1; i<=$ITERATIONS; i++ )); do
                             input_fileB="$DS4/cart/${varB}_${fun}_${pB}/${varB}_${fun}"
                             output_file="tmp-out"
 
-                            mpirun -n "$pA" "$MPI_ARGS_A" precice-aste-run -v -a -p A --mesh "$input_fileA" --data "eval" || kill 0 &
-                            mpirun -n "$pB" "$MPI_ARGS_B" precice-aste-run -v -a -p B --mesh "$input_fileB" --output "$output_file" --data "eval-mapped" || kill 0 & wait
+                            bash ../mpi-cmd.sh "$pA" "$MPI_ARGS_A" "$input_fileA" "$pB" "$MPI_ARGS_B" "$input_fileB" "$output_file"
 
                             outdir="$DPERF/$mapping/${varA}_to_${varB}/${fun}/p${pA}_to_p${pB}/it${i}"
                             mkdir -p "$outdir"
+                            rm -rf "${outdir}/precice-profiling"
+                            rm -rf "${outdir}/precice-run"
                             mv "./precice-profiling" "$outdir"
                             mv "./precice-run" "$outdir"
                             rm -rf "$output_file"
@@ -117,11 +120,12 @@ for (( i=1; i<=$ITERATIONS; i++ )); do
                             input_fileB="$DS4/cart/${varB}_masked_by_nogt_${fun}_${pB}/${varB}_masked_by_nogt_${fun}"
                             output_file="tmp-out"
 
-                            mpirun -n "$pA" "$MPI_ARGS_A" precice-aste-run -v -a -p A --mesh "$input_fileA" --data "eval" || kill 0 &
-                            mpirun -n "$pB" "$MPI_ARGS_B" precice-aste-run -v -a -p B --mesh "$input_fileB" --output "$output_file" --data "eval-mapped" || kill 0 & wait
+                            bash ../mpi-cmd.sh "$pA" "$MPI_ARGS_A" "$input_fileA" "$pB" "$MPI_ARGS_B" "$input_fileB" "$output_file"
 
                             outdir="$DPERF/$mapping/${varA}_masked_by_nogt_to_${varB}_masked_by_nogt/${fun}/p${pA}_to_p${pB}/it${i}"
                             mkdir -p "$outdir"
+                            rm -rf "${outdir}/precice-profiling"
+                            rm -rf "${outdir}/precice-run"
                             mv "./precice-profiling" "$outdir"
                             mv "./precice-run" "$outdir"
                             rm -rf "$output_file"
