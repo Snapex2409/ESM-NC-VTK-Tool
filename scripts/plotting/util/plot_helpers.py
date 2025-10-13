@@ -59,10 +59,10 @@ def __generate_constants():
                 "l_min": "l-min",
                 "l_max": "l-max"
                 }
-    mapping_rename = {"nn": "first order",
-                      "np": "second order",
+    mapping_rename = {"nn": "nearest neighbor",
+                      "np": "bilinear",
                       "rbf": "higher order"}
-    FONT_SIZE = 18
+    FONT_SIZE = 20
     return renaming, mapping_rename, FONT_SIZE
 
 def __generate_bar_properties(keys, data_dict):
@@ -73,7 +73,8 @@ def __generate_bar_properties(keys, data_dict):
     offsets = np.linspace(-width * (n_items_per_group - 1) / 2, width * (n_items_per_group - 1) / 2,
                           n_items_per_group)
     spacing = 0.02
-    colors = {'preCICE': '#A4C8E1', 'ESMF': '#70B8A2', 'YAC': '#E491A6', 'SCRIP': '#FFB89E'}
+    #colors = {'preCICE': '#A4C8E1', 'ESMF': '#70B8A2', 'YAC': '#E491A6', 'SCRIP': '#FFB89E'}
+    colors = {'preCICE': '#5684E9', 'ESMF': '#009E73', 'YAC': '#E69F00', 'SCRIP': '#CC79A7'}#b, g, o, p
     mapper2idx = {'preCICE': 0, 'ESMF': 1, 'YAC': 2, 'SCRIP': 3}
 
     return x, width, offsets, spacing, colors, mapper2idx
@@ -108,12 +109,12 @@ def __plot_data_field_merged(plot_properties_fun, plot_fun, data_dict, field, ig
                 plot_fun(field_values, plot_properties, mapper)
 
             plt.xticks(ticks=plot_properties[0], labels=list(keys), rotation=45, ha="right", fontsize=FONT_SIZE)  # Rotate if labels are long
-            plt.xlabel("Entries", fontsize=FONT_SIZE)
+            #plt.xlabel("Entries", fontsize=FONT_SIZE)
             plt.ylabel(f"{renaming[field]}", fontsize=FONT_SIZE)
-            plt.title(f"{renaming[field]} plot for {fun_name} {mapping_rename[mapping]}", fontsize=FONT_SIZE)
+            plt.title(f"{fun_name} {mapping_rename[mapping]}", fontsize=FONT_SIZE)
             if useLog: plt.yscale("log")
             else: plt.yticks(fontsize=FONT_SIZE)
-            plt.legend(fontsize=FONT_SIZE)
+            #plt.legend(fontsize=FONT_SIZE, ncol=len(data_dict.keys()), loc='upper right')
             if yrange is not None:
                 ylimits, yticks = yrange
                 plt.ylim(ylimits)
@@ -215,72 +216,73 @@ def create_overlapped_bar_plots(data_dict, field, override_keys, save_path, is_p
 
 def create_overview_plot(data_merged, pairs, fun, save_path, yrange_mean_misfit=None, yrange_glob_cons_src=None):
     x = np.arange(len(pairs))
-    fig, axs = plt.subplots(4, 2, figsize=(10, 12))
-    # preCICE
-    axs[0, 0].plot(x, [data_merged['preCICE']['nn'][fun][key]['mean_misfit'] for key in pairs], color='red', label='first order', marker='.')
-    axs[0, 0].plot(x, [data_merged['preCICE']['np'][fun][key]['mean_misfit'] for key in pairs], color='green', label='second order', marker='x')
-    axs[0, 0].plot(x, [data_merged['preCICE']['rbf'][fun][key]['mean_misfit'] for key in pairs], color='blue', label='higher order', marker='D')
-    # axs[0, 0].set_title('preCICE mean misfit')
-    axs[0, 0].text(0.01, 0.99, "preCICE", transform=axs[0, 0].transAxes, fontsize=14, va='top', ha='left')
-    axs[0, 1].plot(x, [data_merged['preCICE']['nn'][fun][key]['glob_cons_src'] for key in pairs], color='red', label='first order', marker='.')
-    axs[0, 1].plot(x, [data_merged['preCICE']['np'][fun][key]['glob_cons_src'] for key in pairs], color='green', label='second order', marker='x')
-    axs[0, 1].plot(x, [data_merged['preCICE']['rbf'][fun][key]['glob_cons_src'] for key in pairs], color='blue', label='higher order', marker='D')
-    # axs[0, 1].set_title('preCICE global source conservation')
-    axs[0, 1].text(0.01, 0.99, "preCICE", transform=axs[0, 1].transAxes, fontsize=14, va='top', ha='left')
-    # ESMF
-    axs[1, 0].plot(x, [data_merged['ESMF']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], color='red', label='first order', marker='.')
-    axs[1, 0].plot(x, [data_merged['ESMF']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], color='green', label='second order', marker='x')
-    axs[1, 0].plot(x, [data_merged['ESMF']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], color='blue', label='higher order', marker='D')
-    # axs[1, 0].set_title('ESMF mean misfit')
-    axs[1, 0].text(0.01, 0.99, "ESMF", transform=axs[1, 0].transAxes, fontsize=14, va='top', ha='left')
-    axs[1, 1].plot(x, [data_merged['ESMF']['nn'][fun][key]['glob_cons_src'] for key in pairs], color='red', label='first order', marker='.')
-    axs[1, 1].plot(x, [data_merged['ESMF']['np'][fun][key]['glob_cons_src'] for key in pairs], color='green', label='second order', marker='x')
-    axs[1, 1].plot(x, [data_merged['ESMF']['rbf'][fun][key]['glob_cons_src'] for key in pairs], color='blue', label='higher order', marker='D')
-    # axs[1, 1].set_title('ESMF global source conservation')
-    axs[1, 1].text(0.01, 0.99, "ESMF", transform=axs[1, 1].transAxes, fontsize=14, va='top', ha='left')
-    # YAC
-    axs[2, 0].plot(x, [data_merged['YAC']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], color='red', label='first order', marker='.')
-    axs[2, 0].plot(x, [data_merged['YAC']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], color='green', label='second order', marker='x')
-    axs[2, 0].plot(x, [data_merged['YAC']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], color='blue', label='higher order', marker='D')
-    # axs[2, 0].set_title('YAC mean misfit')
-    axs[2, 0].text(0.01, 0.99, "YAC", transform=axs[2, 0].transAxes, fontsize=14, va='top', ha='left')
-    axs[2, 1].plot(x, [data_merged['YAC']['nn'][fun][key]['glob_cons_src'] for key in pairs], color='red', label='first order', marker='.')
-    axs[2, 1].plot(x, [data_merged['YAC']['np'][fun][key]['glob_cons_src'] for key in pairs], color='green', label='second order', marker='x')
-    axs[2, 1].plot(x, [data_merged['YAC']['rbf'][fun][key]['glob_cons_src'] for key in pairs], color='blue', label='higher order', marker='D')
-    # axs[2, 1].set_title('YAC global source conservation')
-    axs[2, 1].text(0.01, 0.99, "YAC", transform=axs[2, 1].transAxes, fontsize=14, va='top', ha='left')
-    # SCRIP
-    axs[3, 0].plot(x, [data_merged['SCRIP']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], color='red', label='first order', marker='.')
-    axs[3, 0].plot(x, [data_merged['SCRIP']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], color='green', label='second order', marker='x')
-    axs[3, 0].plot(x, [data_merged['SCRIP']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], color='blue', label='higher order', marker='D')
-    # axs[3, 0].set_title('SCRIP mean misfit')
-    axs[3, 0].text(0.01, 0.99, "SCRIP", transform=axs[3, 0].transAxes, fontsize=14, va='top', ha='left')
-    axs[3, 1].plot(x, [data_merged['SCRIP']['nn'][fun][key]['glob_cons_src'] for key in pairs], color='red', label='first order', marker='.')
-    axs[3, 1].plot(x, [data_merged['SCRIP']['np'][fun][key]['glob_cons_src'] for key in pairs], color='green', label='second order', marker='x')
-    axs[3, 1].plot(x, [data_merged['SCRIP']['rbf'][fun][key]['glob_cons_src'] for key in pairs], color='blue', label='higher order', marker='D')
-    # axs[3, 1].set_title('SCRIP global source conservation')
-    axs[3, 1].text(0.01, 0.99, "SCRIP", transform=axs[3, 1].transAxes, fontsize=14, va='top', ha='left')
+    width = 0.25  # width of each bar
+    fig, axs = plt.subplots(4, 2, figsize=(20, 24))
 
+    # preCICE
+    axs[0, 0].bar(x - width, [data_merged['preCICE']['nn'][fun][key]['mean_misfit'] for key in pairs], width, color='#009E73', label='first order')
+    axs[0, 0].bar(x, [data_merged['preCICE']['np'][fun][key]['mean_misfit'] for key in pairs], width, color='#E69F00', label='second order')
+    axs[0, 0].bar(x + width, [data_merged['preCICE']['rbf'][fun][key]['mean_misfit'] for key in pairs], width, color='#5684E9', label='higher order')
+    axs[0, 0].text(0.01, 0.99, "preCICE", transform=axs[0, 0].transAxes, fontsize=20, va='top', ha='left')
+
+    axs[0, 1].bar(x - width, [data_merged['preCICE']['nn'][fun][key]['glob_cons_src'] for key in pairs], width, color='#009E73', label='first order')
+    axs[0, 1].bar(x, [data_merged['preCICE']['np'][fun][key]['glob_cons_src'] for key in pairs], width, color='#E69F00', label='second order')
+    axs[0, 1].bar(x + width, [data_merged['preCICE']['rbf'][fun][key]['glob_cons_src'] for key in pairs], width, color='#5684E9', label='higher order')
+    axs[0, 1].text(0.01, 0.99, "preCICE", transform=axs[0, 1].transAxes, fontsize=20, va='top', ha='left')
+
+    # ESMF
+    axs[1, 0].bar(x - width, [data_merged['ESMF']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#009E73', label='first order')
+    axs[1, 0].bar(x, [data_merged['ESMF']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#E69F00', label='second order')
+    axs[1, 0].bar(x + width, [data_merged['ESMF']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#5684E9', label='higher order')
+    axs[1, 0].text(0.01, 0.99, "ESMF", transform=axs[1, 0].transAxes, fontsize=20, va='top', ha='left')
+
+    axs[1, 1].bar(x - width, [data_merged['ESMF']['nn'][fun][key]['glob_cons_src'] for key in pairs], width, color='#009E73', label='first order')
+    axs[1, 1].bar(x, [data_merged['ESMF']['np'][fun][key]['glob_cons_src'] for key in pairs], width, color='#E69F00', label='second order')
+    axs[1, 1].bar(x + width, [data_merged['ESMF']['rbf'][fun][key]['glob_cons_src'] for key in pairs], width, color='#5684E9', label='higher order')
+    axs[1, 1].text(0.01, 0.99, "ESMF", transform=axs[1, 1].transAxes, fontsize=20, va='top', ha='left')
+
+    # YAC
+    axs[2, 0].bar(x - width, [data_merged['YAC']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#009E73', label='first order')
+    axs[2, 0].bar(x, [data_merged['YAC']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#E69F00', label='second order')
+    axs[2, 0].bar(x + width, [data_merged['YAC']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#5684E9', label='higher order')
+    axs[2, 0].text(0.01, 0.99, "YAC", transform=axs[2, 0].transAxes, fontsize=20, va='top', ha='left')
+
+    axs[2, 1].bar(x - width, [data_merged['YAC']['nn'][fun][key]['glob_cons_src'] for key in pairs], width, color='#009E73', label='first order')
+    axs[2, 1].bar(x, [data_merged['YAC']['np'][fun][key]['glob_cons_src'] for key in pairs], width, color='#E69F00', label='second order')
+    axs[2, 1].bar(x + width, [data_merged['YAC']['rbf'][fun][key]['glob_cons_src'] for key in pairs], width, color='#5684E9', label='higher order')
+    axs[2, 1].text(0.01, 0.99, "YAC", transform=axs[2, 1].transAxes, fontsize=20, va='top', ha='left')
+
+    # SCRIP
+    axs[3, 0].bar(x - width, [data_merged['SCRIP']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#009E73', label='first order')
+    axs[3, 0].bar(x, [data_merged['SCRIP']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#E69F00', label='second order')
+    axs[3, 0].bar(x + width, [data_merged['SCRIP']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#5684E9', label='higher order')
+    axs[3, 0].text(0.01, 0.99, "SCRIP", transform=axs[3, 0].transAxes, fontsize=20, va='top', ha='left')
+
+    axs[3, 1].bar(x - width, [data_merged['SCRIP']['nn'][fun][key]['glob_cons_src'] for key in pairs], width, color='#009E73', label='first order')
+    axs[3, 1].bar(x, [data_merged['SCRIP']['np'][fun][key]['glob_cons_src'] for key in pairs], width, color='#E69F00', label='second order')
+    axs[3, 1].bar(x + width, [data_merged['SCRIP']['rbf'][fun][key]['glob_cons_src'] for key in pairs], width, color='#5684E9', label='higher order')
+    axs[3, 1].text(0.01, 0.99, "SCRIP", transform=axs[3, 1].transAxes, fontsize=20, va='top', ha='left')
+
+    # formatting
     for ax in axs.flat:
-        # ax.set(xlabel='x-label', ylabel='y-label')
         ax.set_xticks(x)
-        ax.set_xticklabels(pairs, rotation=45, ha='right')
-        legend = ax.legend(loc='upper right', frameon=False)
-        legend.get_frame().set_facecolor('none')  # transparent background
+        ax.set_xticklabels(pairs, rotation=45, ha='right', fontsize=20)
+        #legend = ax.legend(loc='upper right', frameon=True, ncol=3, bbox_to_anchor=(1.0, 1.3), fontsize=20)
+        #legend.get_frame().set_facecolor('none')
+        # plt.legend(fontsize=FONT_SIZE, ncol=len(data_dict.keys()), loc='upper right')
         ax.set_yscale('log')
+
     for i in range(4):
-        axs[i, 0].set(ylabel='mean misfit')
+        axs[i, 0].set_ylabel('mean misfit', fontsize=20)
         if yrange_mean_misfit is not None:
             ylimits, yticks = yrange_mean_misfit
-            axs[i, 0].set(ylim=ylimits, yticks=yticks)
-        axs[i, 1].set(ylabel='global source conservation')
+            axs[i, 0].set(ylim=ylimits)
+            axs[i, 0].set_yticks(fontsize=20, ticks=yticks, labels=[str(f) for f in yticks])
+        axs[i, 1].set_ylabel('global source conservation', fontsize=20)
         if yrange_glob_cons_src is not None:
             ylimits, yticks = yrange_glob_cons_src
-            axs[i, 1].set(ylim=ylimits, yticks=yticks)
-
-    # Hide x labels and tick labels for top plots and y ticks for right plots.
-    # for ax in axs.flat:
-    # ax.label_outer()
+            axs[i, 1].set(ylim=ylimits)
+            axs[i, 1].set_yticks(fontsize=20, ticks=yticks, labels=[str(f) for f in yticks])
 
     fig.tight_layout()
     fig.savefig(f'{save_path}/overview-{fun}.png')

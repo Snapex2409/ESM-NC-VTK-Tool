@@ -58,7 +58,7 @@ if __name__ == '__main__':
     ylimits["l_max"]         = None
     ylimits["glob_cons_src"] = (np.array([1e-5, 1e-1]), np.array([1e-5, 1e-4, 1e-3, 1e-2, 1e-1]))
     ylimits["glob_cons_tgt"] = (np.array([1e-10, 1e-1]), np.array([1e-10, 1e-7, 1e-4, 1e-1]))
-
+    function = "gulfstream" # sinusoid harmonic vortex gulfstream
 
     # base mappings both
     for resolution in data_base.keys():
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         create_merged_plots(data_merged, pairs, save_path, ylimits)
         create_overlapped_bar_plots(data_merged, "mean_misfit", pairs, save_path, True, True, yrange=ylimits["mean_misfit"])
         create_overlapped_bar_plots(data_merged, "glob_cons_src", pairs, save_path, True, False, yrange=ylimits["glob_cons_src"])
-        create_overview_plot(data_merged, pairs, "vortex", save_path, ylimits["mean_misfit"], ylimits["glob_cons_src"])
+        create_overview_plot(data_merged, pairs, function, save_path, ylimits["mean_misfit"], ylimits["glob_cons_src"])
 
     # cons mapping preCICE, base reference
     for resolution in data_cons.keys():
@@ -80,7 +80,7 @@ if __name__ == '__main__':
         create_merged_plots(data_merged, pairs, save_path, ylimits)
         create_overlapped_bar_plots(data_merged, "mean_misfit", pairs, save_path, True, True, yrange=ylimits["mean_misfit"])
         create_overlapped_bar_plots(data_merged, "glob_cons_src", pairs, save_path, True, False, yrange=ylimits["glob_cons_src"])
-        create_overview_plot(data_merged, pairs, "vortex", save_path, ylimits["mean_misfit"], ylimits["glob_cons_src"])
+        create_overview_plot(data_merged, pairs, function, save_path, ylimits["mean_misfit"], ylimits["glob_cons_src"])
 
     # cons mapping both
     for resolution in data_cons.keys():
@@ -91,7 +91,7 @@ if __name__ == '__main__':
         create_merged_plots(data_merged, pairs, save_path, ylimits)
         create_overlapped_bar_plots(data_merged, "mean_misfit", pairs, save_path, True, True, yrange=ylimits["mean_misfit"])
         create_overlapped_bar_plots(data_merged, "glob_cons_src", pairs, save_path, True, False, yrange=ylimits["glob_cons_src"])
-        create_overview_plot(data_merged, pairs, "vortex", save_path, ylimits["mean_misfit"], ylimits["glob_cons_src"])
+        create_overview_plot(data_merged, pairs, function, save_path, ylimits["mean_misfit"], ylimits["glob_cons_src"])
 
     # bad torc, base both
     save_path = f"../../images/metrics_bad_torc"
@@ -101,4 +101,4 @@ if __name__ == '__main__':
     create_merged_plots(data_merged, pairs, save_path, ylimits)
     create_overlapped_bar_plots(data_merged, "mean_misfit", pairs, save_path, True, True, yrange=ylimits["mean_misfit"])
     create_overlapped_bar_plots(data_merged, "glob_cons_src", pairs, save_path, True, False, yrange=ylimits["glob_cons_src"])
-    create_overview_plot(data_merged, pairs, "vortex", save_path, ylimits["mean_misfit"], ylimits["glob_cons_src"])
+    create_overview_plot(data_merged, pairs, function, save_path, ylimits["mean_misfit"], ylimits["glob_cons_src"])

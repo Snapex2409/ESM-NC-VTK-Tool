@@ -30,7 +30,7 @@
     <mapping:nearest-projection direction="read" from="A-Mesh" to="B-Mesh" constraint="consistent"/>
   </participant>
 
-  <m2n:sockets acceptor="A" connector="B" exchange-directory="." />
+  <m2n:sockets acceptor="A" connector="B" exchange-directory="." network="eno1" port="63533" enforce-gather-scatter="1" />
 
   <coupling-scheme:parallel-explicit>
     <participants first="A" second="B" />

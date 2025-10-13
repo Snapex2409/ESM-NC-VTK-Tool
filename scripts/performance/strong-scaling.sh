@@ -36,7 +36,7 @@ cd "./tmp"
 
 # perform mappings
 for (( i=1; i<=$ITERATIONS; i++ )); do
-    for pA in "${PARTITIONS[@]}"; do
+    for pA in 1; do
         for pB in "${PARTITIONS[@]}"; do
             for mapping in "${MAPPINGS[@]}"; do
                 cp "../../precice-configs/precice-config-mesh-perf-$mapping.xml" ./precice-config.xml
@@ -140,3 +140,70 @@ done
 # Exiting tmp work dir
 cd ..
 rm -rf "./tmp"
+for mapping in "${MAPPINGS[@]}"; do
+    for varA in "${SEA_VARS[@]}"; do
+        for varB in "${ATM_VARS[@]}"; do
+            for fun in "${FUNCTIONS[@]}"; do
+                for pA in 1; do
+                    for pB in "${PARTITIONS[@]}"; do
+                        for (( i=1; i<=$ITERATIONS; i++ )); do
+                            (cd "$DPERF/$mapping/${varA}_to_${varB}_masked_by_${varA}/${fun}/p${pA}_to_p${pB}/it${i}" && precice-profiling merge && precice-profiling trace)
+                        done
+                    done
+                done
+            done
+        done
+    done
+    for varA in "${SEA_VARS[@]}"; do
+        for varB in "${ATM_VARS[@]}"; do
+            for fun in "${FUNCTIONS[@]}"; do
+                for pA in 1; do
+                    for pB in "${PARTITIONS[@]}"; do
+                        for (( i=1; i<=$ITERATIONS; i++ )); do
+                            (cd "$DPERF/$mapping/${varB}_masked_by_${varA}_to_${varA}/${fun}/p${pA}_to_p${pB}/it${i}" && precice-profiling merge && precice-profiling trace)
+                        done
+                    done
+                done
+            done
+        done
+    done
+    for varA in "${SEA_VARS[@]}"; do
+        for varB in "${SEA_VARS[@]}"; do
+            if [[ "$varA" == "$varB" ]]; then
+                continue
+            fi
+            for fun in "${FUNCTIONS[@]}"; do
+                for pA in 1; do
+                    for pB in "${PARTITIONS[@]}"; do
+                        for (( i=1; i<=$ITERATIONS; i++ )); do
+                            (cd "$DPERF/$mapping/${varA}_to_${varB}/${fun}/p${pA}_to_p${pB}/it${i}" && precice-profiling merge && precice-profiling trace)
+                        done
+                    done
+                done
+            done
+        done
+    done
+    for varA in "${ATM_VARS[@]}"; do
+        for varB in "${ATM_VARS[@]}"; do
+            if [[ "$varA" == "$varB" ]]; then
+                continue
+            fi
+            for fun in "${FUNCTIONS[@]}"; do
+                for pA in 1; do
+                    for pB in "${PARTITIONS[@]}"; do
+                        for (( i=1; i<=$ITERATIONS; i++ )); do
+                            (cd "$DPERF/$mapping/${varA}_masked_by_nogt_to_${varB}_masked_by_nogt/${fun}/p${pA}_to_p${pB}/it${i}" && precice-profiling merge && precice-profiling trace)
+                        done
+                    done
+                done
+            done
+        done
+    done
+done
+
+
+
+
+
+
+
