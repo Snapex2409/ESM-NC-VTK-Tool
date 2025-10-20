@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import envt.nc_util.nc_wrapper as ncw
 import envt.vtk_util.vtk_wrapper as vtkw
 from envt.tools.convert import Converter as cv
@@ -102,6 +104,11 @@ class NC2VTK:
             nfilter_msk = np.zeros((len(lon),))
             override_zero = list()
 
+            point_to_cells = defaultdict(set)
+            for cell_idx in range(num_entries):
+                for point_idx in corner_indices[:, cell_idx]:
+                    point_to_cells[point_idx].add(cell_idx)
+
         for i in range(num_entries):
             # triangulate points
             # first filter out duplicates
@@ -111,7 +118,11 @@ class NC2VTK:
 
             # mark cells as valid
             if msk is not None and msk[i] == 0:
-                nfilter_msk[indices] = 1.0
+                for point_idx in indices:
+                    other_cells = point_to_cells[point_idx]
+                    mean_msk = np.mean(msk[np.array(list(other_cells))])
+                    nfilter_msk[point_idx] = 1.0 - mean_msk # we flip the meaning of 0 and 1
+                #nfilter_msk[indices] = 1.0
 
             points = cart_points[indices]
             _, tri_indices = triangulate(points, indices)
