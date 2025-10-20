@@ -3,6 +3,7 @@ import vtkmodules.util.numpy_support as vtk_np
 from pyproj import Proj, transform
 import envt.vtk_util.vtk_wrapper as vtkw
 from typing import Type, Union
+import warnings
 
 class Converter(vtkw.VTKInputFile):
     """Provides coordinate conversion functionality for VTK files"""
@@ -62,7 +63,9 @@ class Converter(vtkw.VTKInputFile):
         :return: converted data arrays (stacked)
         """
         mode.check_data(in_arr_d0, in_arr_d1, in_arr_d2)
-        out_arr_d0, out_arr_d1, out_arr_d2 = transform(mode.src_crs(), mode.dst_crs(), in_arr_d0, in_arr_d1, in_arr_d2)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=FutureWarning)
+            out_arr_d0, out_arr_d1, out_arr_d2 = transform(mode.src_crs(), mode.dst_crs(), in_arr_d0, in_arr_d1, in_arr_d2)
         np_out_array = np.column_stack((out_arr_d0, out_arr_d1, out_arr_d2))
         return np_out_array
 
