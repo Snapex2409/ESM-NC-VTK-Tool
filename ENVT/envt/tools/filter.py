@@ -184,12 +184,12 @@ class Filter:
     @staticmethod
     def get_valid_cells(denotes_water, threshold, mask):
         if denotes_water:
-            valid_points = mask > threshold
+            valid_points = mask >= threshold
         else:
             ones = np.ones_like(mask)
             land_amount = np.minimum(ones, mask)
             water_amount = ones - land_amount
-            valid_points = water_amount > threshold
+            valid_points = water_amount >= threshold
         return valid_points
 
     def apply(self, output_file, threshold=0.001, denotes_water=False, create_conn=False):
