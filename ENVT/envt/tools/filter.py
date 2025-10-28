@@ -1,11 +1,16 @@
+from typing import Union
+
 import envt.vtk_util.vtk_wrapper as vtkw
 import envt.nc_util.nc_wrapper as ncw
 from envt.tools.nc2vtk import NC2VTK
 from envt.tools.convert import Converter as cv
-from envt.tools.triangulation import triangulate_polygon as triangulate, triangulate_convex_shape, check_order, check_distances
+from envt.tools.triangulation import triangulate_polygon as triangulate, triangulate_convex_shape, check_order, check_distances, compute_tri_area, compute_plane_basis, project_onto_plane
 import numpy as np
 import vtkmodules.util.numpy_support as vtk_np
 from collections import defaultdict
+from scipy.spatial import KDTree
+from shapely.geometry import Polygon
+from tqdm import tqdm
 
 class Filter:
     """
@@ -13,7 +18,7 @@ class Filter:
     and attaches connectivity information for center based mesh if needed.
     """
 
-    def __init__(self, input_file, var:ncw.NCVars, nc_file_path):
+    def __init__(self, input_file, var:ncw.NCVars, nc_file_path, frac_file, frac_var:Union[ncw.NCVars, None]):
         self.vtk_file = vtkw.VTKInputFile(input_file)
         """Mask VTK file"""
         self.nc_input = ncw.NCFile(nc_file_path)
@@ -38,6 +43,10 @@ class Filter:
         """ Center data latitude"""
         self.var = var
         """ Active variable"""
+        self.frac_data = None
+        """ Data for computing fractions """
+        if frac_file is not None and frac_var is not None:
+            self.frac_data = Filter(frac_file, frac_var, nc_file_path, None, None)
 
     def check_center(self, cell_neighbours, cell_idx_i, points):
         """
@@ -192,7 +201,64 @@ class Filter:
             valid_points = water_amount >= threshold
         return valid_points
 
-    def apply(self, output_file, threshold=0.001, denotes_water=False, create_conn=False):
+    @staticmethod
+    def compute_fractions(mask_src, points_src, centers_src, indices_src, points_dst, centers_dst, indices_dst, areas_dst):
+        """
+        Source should be a SEA mesh, while destination should be a ATM mesh. Computes for each ATM mesh cell the
+        fraction of the area that is covered by a not masked out cell of the SEA mesh.
+        :param mask_src: assignment of 0 or 1 values to source mesh
+        :param points_src: unique source points
+        :param centers_src: source center points
+        :param indices_src: source cell polygon index lists
+        :param points_dst: unique destination points
+        :param centers_dst: destination center points
+        :param indices_dst: destination cell polygon index lists
+        :param areas_dst: destination cell areas
+        :return: fractions
+        """
+        accTree = KDTree(centers_src)
+
+        def gather_mean_dist(points, cell_polys, N=10):
+            cell_polys_selection = cell_polys[:, 0::int(cell_polys.shape[1]/N)]
+            dist = 0
+            count = 0
+            for poly_idx in range(cell_polys_selection.shape[1]):
+                poly = cell_polys_selection[:, poly_idx]
+                poly_points = points[poly]
+                dist += np.linalg.norm(poly_points[0] - poly_points[1])
+                count += 1
+            return dist / count
+        searchRad = 3 * np.max([gather_mean_dist(points_src, indices_src), gather_mean_dist(points_dst, indices_dst)])
+
+        fractions = np.zeros_like(areas_dst)
+        for idx_dst in tqdm(range(centers_dst.shape[0]), desc="Computing Fractions"):
+            center_dst = centers_dst[idx_dst]
+            dst_poly = np.unique(indices_dst[:, idx_dst])
+            if len(dst_poly) < 3: continue
+
+            u,v = compute_plane_basis(points_dst[dst_poly])
+            # find all relevant src cells
+            near_indices = accTree.query_ball_point(center_dst, r=searchRad)
+            if len(near_indices) == 0: continue
+            # gather not masked out cells and flatten lists
+            src_polys = [np.unique(indices_src[:, idx]) for idx in near_indices]
+            proj_src_polys = [Polygon(project_onto_plane(points_src[src_polys[idx]], center_dst, u, v)).convex_hull for idx in range(len(src_polys)) if len(src_polys[idx]) >= 3]
+
+            dst_poly_points = points_dst[dst_poly]
+            if len(dst_poly_points) < 3: continue
+            proj_dst_poly_points = project_onto_plane(dst_poly_points, center_dst, u, v)
+            proj_dst_poly = Polygon(proj_dst_poly_points).convex_hull
+            if not proj_dst_poly.is_valid: continue
+            contrib = 0.
+            for idx, poly in enumerate(proj_src_polys):
+                if poly.is_valid:
+                    contrib += poly.intersection(proj_dst_poly).area * mask_src[near_indices[idx]]
+            fractions[idx_dst] += contrib
+
+        fractions /= areas_dst
+        return fractions
+
+    def apply(self, output_file, threshold=0.001, denotes_water=False, create_conn=False, override_mask=None, override_out_mask=None):
         """
         Applies mapped mask meshes (corner based) to target meshes (center based)
         and attaches connectivity information for center based mesh if needed.
@@ -203,7 +269,8 @@ class Filter:
         :return:
         """
         # load mask data
-        np_cell_mask = self.gather_cell_mask()
+        if override_mask is not None: np_cell_mask = override_mask
+        else: np_cell_mask = self.gather_cell_mask()
         if np_cell_mask is None: return
 
         # find valid cells
@@ -229,17 +296,13 @@ class Filter:
             points = np_msk_points[indices]
             tri_points, tri_indices = triangulate(points, indices)
 
-            for idx_tri in range(tri_indices.shape[0]):
-                p0 = tri_points[idx_tri][0]
-                p1 = tri_points[idx_tri][1]
-                p2 = tri_points[idx_tri][2]
+            for idx_tri in range(tri_indices.shape[0]): np_cell_sizes[i] += compute_tri_area(tri_points[idx_tri])
 
-                v = p1 - p0
-                w = p2 - p0
-                cross_product = np.cross(v, w)
-                np_cell_sizes[i] += np.abs(0.5 * np.linalg.norm(cross_product))
         point_data_integral = vtk_np.numpy_to_vtk(np_cell_sizes[valid_points][unique_points], deep=True)
         point_data_integral.SetName("area")
+        if override_out_mask is None: point_data_msk = vtk_np.numpy_to_vtk(np_cell_mask[valid_points][unique_points], deep=True)
+        else: point_data_msk = vtk_np.numpy_to_vtk(override_out_mask[valid_points][unique_points], deep=True)
+        point_data_msk.SetName("mask")
 
         # compute new cells based on centers
         if create_conn:
@@ -255,12 +318,36 @@ class Filter:
                 vtk_tri.GetPointIds().SetId(2, k)
                 vtk_cells.InsertNextCell(vtk_tri)
 
+        # compute fractions
+        if self.frac_data is not None:
+            frac_mask = self.frac_data.gather_cell_mask()
+            frac_valid_points = Filter.get_valid_cells(denotes_water, threshold, frac_mask)
+            frac_points = cv.convert_data_arrays(cv.Mode2DTO3D(), self.frac_data.lon, self.frac_data.lat, np.zeros((len(self.frac_data.lon),)))
+            frac_points = np.round(frac_points[frac_valid_points], decimals=5)
+            frac_points, frac_unique_points = np.unique(frac_points, return_index=True, axis=0)
+            self.frac_data.lon = self.frac_data.lon[frac_valid_points][frac_unique_points]
+            self.frac_data.lat = self.frac_data.lat[frac_valid_points][frac_unique_points]
+            frac_msk_points = cv.convert_data_arrays(cv.Mode2DTO3D(), self.frac_data.msk_lon, self.frac_data.msk_lat, np.zeros(len(self.frac_data.msk_lon), ))
+
+            fractions = Filter.compute_fractions(frac_mask[frac_valid_points][frac_unique_points],
+                                                 frac_msk_points,
+                                                 frac_points,
+                                                 self.frac_data.msk_corner_indices[:, frac_valid_points][:, frac_unique_points],
+                                                 np_msk_points,
+                                                 np_points,
+                                                 self.msk_corner_indices[:, valid_points][:, unique_points],
+                                                 np_cell_sizes[valid_points][unique_points])
+            point_data_frac = vtk_np.numpy_to_vtk(fractions, deep=True)
+            point_data_frac.SetName("frac")
+
         out_grid = vtkw.vtkUnstructuredGrid()
         out_points = vtkw.vtkPoints()
         out_points.SetData(vtk_np.numpy_to_vtk(np_points))
         out_grid.SetPoints(out_points)
         if create_conn: out_grid.SetCells(vtkw.VTK_TRIANGLE, vtk_cells)
         out_grid.GetPointData().AddArray(point_data_integral)
+        out_grid.GetPointData().AddArray(point_data_msk)
+        if self.frac_data is not None: out_grid.GetPointData().AddArray(point_data_frac)
         vtkw.VTKOutputFile(output_file, out_grid).write()
 
     def apply_corner(self, output_file, threshold=0.001, denotes_water=False, create_conn=False):

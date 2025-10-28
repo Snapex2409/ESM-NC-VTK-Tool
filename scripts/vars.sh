@@ -14,7 +14,7 @@ NC_MESH="${NC_DIR}/bench_grids.nc"
 NC_MASK="${NC_DIR}/bench_masks_ocea_not_atm.nc"
 
 # directories for data of each step
-RES="TH0_2"
+RES="TH0_001"
 DS1="${OUT}/01_corner_meshes"
 DS2="${OUT}/02_masks/${RES}"
 DS3="${OUT}/03_center_meshes/${RES}"
@@ -33,7 +33,7 @@ ITERATIONS=10
 MPI_ARGS_A="" # set this up for your local environment
 MPI_ARGS_B="" # set this up for your local environment
 
-THRESHOLD=0.2
+THRESHOLD=0.001
 BAD_TORC=0
 
 cd $OPWD

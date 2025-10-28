@@ -58,28 +58,39 @@ class Evaluator(vtkw.VTKInputFile):
         ana_point_data_tgt = Evaluator.FUNCTIONS[fun_name](np_points)
 
         map_point_data = None
-        map_point_data_cell = None
+        map_point_area = None
+        map_point_mask = None
+        map_point_frac = None
         if self.input_point_data:
             for i in range(self.input_point_data.GetNumberOfArrays()):
                 array = self.input_point_data.GetArray(i)
                 if array.GetName() == "eval":
                     map_point_data = vtk_np.vtk_to_numpy(array)
                 if array.GetName() == "area":
-                    map_point_data_cell = vtk_np.vtk_to_numpy(array)
+                    map_point_area = vtk_np.vtk_to_numpy(array)
+                if array.GetName() == "mask":
+                    map_point_mask = vtk_np.vtk_to_numpy(array)
+                if array.GetName() == "frac":
+                    map_point_frac = vtk_np.vtk_to_numpy(array)
 
-        if map_point_data is None or map_point_data_cell is None:
-            print("No eval/area data in mapped VTK file")
+        if map_point_data is None or map_point_area is None or map_point_mask is None or map_point_frac is None:
+            print("No eval/area/mask data in mapped VTK file")
             return
 
         source_mesh = vtkw.VTKInputFile(source_mesh_file)
-        source_point_data_cell = None
+        source_point_area = None
+        source_point_mask = None
+        source_point_frac = None
         for i in range(source_mesh.input_point_data.GetNumberOfArrays()):
             array = source_mesh.input_point_data.GetArray(i)
             if array.GetName() == "area":
-                source_point_data_cell = vtk_np.vtk_to_numpy(array)
-                break
-        if source_point_data_cell is None:
-            print("No area data in source VTK file")
+                source_point_area = vtk_np.vtk_to_numpy(array)
+            if array.GetName() == "mask":
+                source_point_mask = vtk_np.vtk_to_numpy(array)
+            if array.GetName() == "frac":
+                source_point_frac = vtk_np.vtk_to_numpy(array)
+        if source_point_area is None or source_point_mask is None or source_point_frac is None:
+            print("No area/mask data in source VTK file")
 
         np_points = vtk_np.vtk_to_numpy(source_mesh.input_points.GetData())
         ana_points_data_src = Evaluator.FUNCTIONS[fun_name](np_points)
@@ -107,9 +118,9 @@ class Evaluator(vtkw.VTKInputFile):
         l_min = (np.min(ana_point_data_tgt) - np.min(map_point_data)) / np.max(np.abs(ana_point_data_tgt))
         l_max = (np.max(map_point_data) - np.max(ana_point_data_tgt)) / np.max(np.abs(ana_point_data_tgt))
 
-        int_map = Evaluator.integrate_2d(mesh_points_tgt, map_point_data, map_point_data_cell)
-        int_ana_src = Evaluator.integrate_2d(mesh_points_src, ana_points_data_src, source_point_data_cell)
-        int_ana_tgt = Evaluator.integrate_2d(mesh_points_tgt, ana_point_data_tgt, map_point_data_cell)
+        int_map = Evaluator.integrate_2d(mesh_points_tgt, map_point_data, map_point_area * map_point_frac)
+        int_ana_src = Evaluator.integrate_2d(mesh_points_src, ana_points_data_src, source_point_area * source_point_frac)
+        int_ana_tgt = Evaluator.integrate_2d(mesh_points_tgt, ana_point_data_tgt, map_point_area * map_point_frac)
         glob_cons_src = np.abs(int_map - int_ana_src) / np.abs(int_ana_src)
         glob_cons_tgt = np.abs(int_map - int_ana_tgt) / np.abs(int_ana_tgt)
 

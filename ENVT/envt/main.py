@@ -30,6 +30,7 @@ def main():
     vtk_parser.add_argument("-o", "--output", type=str, help="Output file path.", default=None)
     vtk_parser.add_argument("-f", "--filter", action="store_true", help="Filter out land cells")
     vtk_parser.add_argument("-ntf", "--notorcfix", action="store_true", help="Disable TORC_FIX.")
+    vtk_parser.add_argument("-ntri", "--notriangulation", action="store_true", help="Disable triangulation.")
 
     # VTK Convert mode
     vtkc_parser = subparsers.add_parser("vtkc", help="Convert VTK unstructured grid.")
@@ -62,6 +63,8 @@ def main():
     vtkf_parser.add_argument("-c", "--connect", action="store_true", help="Add Connectivity for Center Mesh.")
     vtkf_parser.add_argument("-t", "--threshold", type=float, help="Threshold for filtering.", default=0.001)
     vtkf_parser.add_argument("-co", "--corner", action="store_true", help="Use corner coordinates (clo/cla).")
+    vtkf_parser.add_argument("-f", "--fraction", type=str, help="Compute fractions based on provided SEA mesh file.", default=None)
+    vtkf_parser.add_argument("-fv", "--fvar", type=str, help="Fraction SEA mesh file var.", default=None)
 
     args = parser.parse_args()
 
@@ -82,7 +85,7 @@ def main():
         conv = NC2VTK(args.file, args.mask)
         out_path = "./output.vtk"
         if args.output is not None: out_path = args.output
-        conv.nc2vtk(ncw.NCVars.get_entry(args.var), out_path, args.filter, args.corner, not args.notorcfix)
+        conv.nc2vtk(ncw.NCVars.get_entry(args.var), out_path, args.filter, args.corner, not args.notorcfix, not args.notriangulation)
 
     elif args.mode == "vtkc":
         out_path = "./output.vtk"
@@ -105,7 +108,7 @@ def main():
     elif args.mode == "vtkf":
         out_path = "./output.vtk"
         if args.output is not None: out_path = args.output
-        fil = Filter(args.file, ncw.NCVars.get_entry(args.var), args.nc_file)
+        fil = Filter(args.file, ncw.NCVars.get_entry(args.var), args.nc_file, args.fraction, ncw.NCVars.get_entry(args.fvar))
         if args.corner: fil.apply_corner(out_path, args.threshold, args.water, args.connect)
         else: fil.apply(out_path, args.threshold, args.water, args.connect)
 
