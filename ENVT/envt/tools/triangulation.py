@@ -10,6 +10,15 @@ def compute_normal(points, e1, e2):
     normal = normal / np.linalg.norm(normal)  # Normalize the normal vector
     return normal
 
+def compute_tri_area(points):
+    p0 = points[0]
+    p1 = points[1]
+    p2 = points[2]
+
+    v = p1 - p0
+    w = p2 - p0
+    return np.abs(0.5 * np.linalg.norm(np.cross(v, w)))
+
 def sort_counterclockwise(points, indices, normal):
     """Sort points in counterclockwise order using the normal vector."""
     center = np.mean(points, axis=0)  # Compute centroid
