@@ -32,7 +32,7 @@ def create_merged_plots(data_merged, pairs, save_path, ylimits):
     plot_data_field_merged_bar(data_merged, "rms_misfit", {"nogt-icoh", "icos-icoh"}, True, save_path, True, pairs, yrange=ylimits["rms_misfit"])
     plot_data_field_merged_bar(data_merged, "l_min", {"nogt-icoh", "icos-icoh"}, False, save_path, False, pairs, yrange=ylimits["l_min"])
     plot_data_field_merged_bar(data_merged, "l_max", {"nogt-icoh", "icos-icoh"}, False, save_path, False, pairs, yrange=ylimits["l_max"])
-    plot_data_field_merged_bar(data_merged, "glob_cons_src", {"nogt-icoh", "icos-icoh"}, True, save_path, True, pairs,False, yrange=ylimits["glob_cons_src"])
+    plot_data_field_merged_bar(data_merged, "glob_cons_src", {"nogt-icoh", "icos-icoh"}, True, save_path, True, pairs, yrange=ylimits["glob_cons_src"])
     plot_data_field_merged_bar(data_merged, "glob_cons_tgt", {"nogt-icoh", "icos-icoh"}, True, save_path, True, pairs, yrange=ylimits["glob_cons_tgt"])
 
 
@@ -44,8 +44,8 @@ if __name__ == '__main__':
     ref_data_base = load_ref_base()
     ref_data_cons = load_ref_cons()
 
-    data_base = Metrics.load("../../benchmark", False, False, True, None)
-    data_cons = Metrics.load("../../benchmark", True, False, True, None)
+    data_base = Metrics.load("../../benchmark", False, False, True, override_resolutions=["0_001"])
+    data_cons = Metrics.load("../../benchmark", True, False, True, None, override_resolutions=["0_001"])
     data_bad_torc = Metrics.load("../../benchmark", False, True, False, None)
 
     # setting up y axis for all plots
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     ylimits["rms_misfit"]    = (np.array([1e-6, 1e-1]), np.array([1e-6, 1e-4, 1e-2, 1e-1]))
     ylimits["l_min"]         = None
     ylimits["l_max"]         = None
-    ylimits["glob_cons_src"] = (np.array([1e-5, 1e-1]), np.array([1e-5, 1e-4, 1e-3, 1e-2, 1e-1]))
+    ylimits["glob_cons_src"] = (np.array([1e-6, 1e-2]), np.array([1e-6, 1e-4, 1e-2]))
     ylimits["glob_cons_tgt"] = (np.array([1e-10, 1e-1]), np.array([1e-10, 1e-7, 1e-4, 1e-1]))
     function = "gulfstream" # sinusoid harmonic vortex gulfstream
 
