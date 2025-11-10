@@ -56,7 +56,7 @@ if __name__ == '__main__':
     ylimits["rms_misfit"]    = (np.array([1e-6, 1e-1]), np.array([1e-6, 1e-4, 1e-2, 1e-1]))
     ylimits["l_min"]         = None
     ylimits["l_max"]         = None
-    ylimits["glob_cons_src"] = (np.array([1e-6, 1e-2]), np.array([1e-6, 1e-4, 1e-2]))
+    ylimits["glob_cons_src"] = (np.array([1e-7, 1e-3]), np.array([1e-7, 1e-5, 1e-3]))
     ylimits["glob_cons_tgt"] = (np.array([1e-10, 1e-1]), np.array([1e-10, 1e-7, 1e-4, 1e-1]))
     function = "gulfstream" # sinusoid harmonic vortex gulfstream
 
