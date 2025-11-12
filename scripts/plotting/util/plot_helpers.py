@@ -218,49 +218,49 @@ def create_overview_plot(data_merged, pairs, fun, save_path, yrange_mean_misfit=
     x = np.arange(len(pairs))
     width = 0.25  # width of each bar
     fig, axs = plt.subplots(4, 2, figsize=(20, 24))
-
+    colors = ['#5DA899', '#DCCD7D', '#9F4A96']
     # preCICE
-    axs[0, 0].bar(x - width, [data_merged['preCICE']['nn'][fun][key]['mean_misfit'] for key in pairs], width, color='#009E73', label='nearest neighbour')
-    axs[0, 0].bar(x, [data_merged['preCICE']['np'][fun][key]['mean_misfit'] for key in pairs], width, color='#E69F00', label='linear')
-    axs[0, 0].bar(x + width, [data_merged['preCICE']['rbf'][fun][key]['mean_misfit'] for key in pairs], width, color='#5684E9', label='higher order')
+    axs[0, 0].bar(x - width, [data_merged['preCICE']['nn'][fun][key]['mean_misfit'] for key in pairs], width, color=colors[0], label='nearest neighbour')
+    axs[0, 0].bar(x, [data_merged['preCICE']['np'][fun][key]['mean_misfit'] for key in pairs], width, color=colors[1], label='linear')
+    axs[0, 0].bar(x + width, [data_merged['preCICE']['rbf'][fun][key]['mean_misfit'] for key in pairs], width, color=colors[2], label='higher order')
     axs[0, 0].text(0.01, 0.99, "preCICE", transform=axs[0, 0].transAxes, fontsize=20, va='top', ha='left')
 
-    axs[0, 1].bar(x - width, [data_merged['preCICE']['nn'][fun][key]['glob_cons_src'] for key in pairs], width, color='#009E73', label='nearest neighbour')
-    axs[0, 1].bar(x, [data_merged['preCICE']['np'][fun][key]['glob_cons_src'] for key in pairs], width, color='#E69F00', label='linear')
-    axs[0, 1].bar(x + width, [data_merged['preCICE']['rbf'][fun][key]['glob_cons_src'] for key in pairs], width, color='#5684E9', label='higher order')
+    axs[0, 1].bar(x - width, [data_merged['preCICE']['nn'][fun][key]['glob_cons_src'] for key in pairs], width, color=colors[0], label='nearest neighbour')
+    axs[0, 1].bar(x, [data_merged['preCICE']['np'][fun][key]['glob_cons_src'] for key in pairs], width, color=colors[1], label='linear')
+    axs[0, 1].bar(x + width, [data_merged['preCICE']['rbf'][fun][key]['glob_cons_src'] for key in pairs], width, color=colors[2], label='higher order')
     axs[0, 1].text(0.01, 0.99, "preCICE", transform=axs[0, 1].transAxes, fontsize=20, va='top', ha='left')
 
     # ESMF
-    axs[1, 0].bar(x - width, [data_merged['ESMF']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#009E73', label='nearest neighbour')
-    axs[1, 0].bar(x, [data_merged['ESMF']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#E69F00', label='linear')
-    axs[1, 0].bar(x + width, [data_merged['ESMF']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#5684E9', label='higher order')
+    axs[1, 0].bar(x - width, [data_merged['ESMF']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color=colors[0], label='nearest neighbour')
+    axs[1, 0].bar(x, [data_merged['ESMF']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color=colors[1], label='linear')
+    axs[1, 0].bar(x + width, [data_merged['ESMF']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color=colors[2], label='higher order')
     axs[1, 0].text(0.01, 0.99, "ESMF", transform=axs[1, 0].transAxes, fontsize=20, va='top', ha='left')
 
-    axs[1, 1].bar(x - width, [data_merged['ESMF']['nn'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color='#009E73', label='nearest neighbour')
-    axs[1, 1].bar(x, [data_merged['ESMF']['np'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color='#E69F00', label='linear')
-    axs[1, 1].bar(x + width, [data_merged['ESMF']['rbf'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color='#5684E9', label='higher order')
+    axs[1, 1].bar(x - width, [data_merged['ESMF']['nn'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color=colors[0], label='nearest neighbour')
+    axs[1, 1].bar(x, [data_merged['ESMF']['np'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color=colors[1], label='linear')
+    axs[1, 1].bar(x + width, [data_merged['ESMF']['rbf'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color=colors[2], label='higher order')
     axs[1, 1].text(0.01, 0.99, "ESMF", transform=axs[1, 1].transAxes, fontsize=20, va='top', ha='left')
 
     # YAC
-    axs[2, 0].bar(x - width, [data_merged['YAC']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#009E73', label='nearest neighbour')
-    axs[2, 0].bar(x, [data_merged['YAC']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#E69F00', label='linear')
-    axs[2, 0].bar(x + width, [data_merged['YAC']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#5684E9', label='higher order')
+    axs[2, 0].bar(x - width, [data_merged['YAC']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color=colors[0], label='nearest neighbour')
+    axs[2, 0].bar(x, [data_merged['YAC']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color=colors[1], label='linear')
+    axs[2, 0].bar(x + width, [data_merged['YAC']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color=colors[2], label='higher order')
     axs[2, 0].text(0.01, 0.99, "YAC", transform=axs[2, 0].transAxes, fontsize=20, va='top', ha='left')
 
-    axs[2, 1].bar(x - width, [data_merged['YAC']['nn'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color='#009E73', label='nearest neighbour')
-    axs[2, 1].bar(x, [data_merged['YAC']['np'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color='#E69F00', label='linear')
-    axs[2, 1].bar(x + width, [data_merged['YAC']['rbf'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color='#5684E9', label='higher order')
+    axs[2, 1].bar(x - width, [data_merged['YAC']['nn'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color=colors[0], label='nearest neighbour')
+    axs[2, 1].bar(x, [data_merged['YAC']['np'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color=colors[1], label='linear')
+    axs[2, 1].bar(x + width, [data_merged['YAC']['rbf'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color=colors[2], label='higher order')
     axs[2, 1].text(0.01, 0.99, "YAC", transform=axs[2, 1].transAxes, fontsize=20, va='top', ha='left')
 
     # SCRIP
-    axs[3, 0].bar(x - width, [data_merged['SCRIP']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#009E73', label='nearest neighbour')
-    axs[3, 0].bar(x, [data_merged['SCRIP']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#E69F00', label='linear')
-    axs[3, 0].bar(x + width, [data_merged['SCRIP']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color='#5684E9', label='higher order')
+    axs[3, 0].bar(x - width, [data_merged['SCRIP']['nn'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color=colors[0], label='nearest neighbour')
+    axs[3, 0].bar(x, [data_merged['SCRIP']['np'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color=colors[1], label='linear')
+    axs[3, 0].bar(x + width, [data_merged['SCRIP']['rbf'][fun][key]['mean_misfit'] / 100. for key in pairs], width, color=colors[2], label='higher order')
     axs[3, 0].text(0.01, 0.99, "SCRIP", transform=axs[3, 0].transAxes, fontsize=20, va='top', ha='left')
 
-    axs[3, 1].bar(x - width, [data_merged['SCRIP']['nn'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color='#009E73', label='nearest neighbour')
-    axs[3, 1].bar(x, [data_merged['SCRIP']['np'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color='#E69F00', label='linear')
-    axs[3, 1].bar(x + width, [data_merged['SCRIP']['rbf'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color='#5684E9', label='higher order')
+    axs[3, 1].bar(x - width, [data_merged['SCRIP']['nn'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color=colors[0], label='nearest neighbour')
+    axs[3, 1].bar(x, [data_merged['SCRIP']['np'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color=colors[1], label='linear')
+    axs[3, 1].bar(x + width, [data_merged['SCRIP']['rbf'][fun][key]['glob_cons_src'] / 100. for key in pairs], width, color=colors[2], label='higher order')
     axs[3, 1].text(0.01, 0.99, "SCRIP", transform=axs[3, 1].transAxes, fontsize=20, va='top', ha='left')
 
     # formatting
